@@ -1,12 +1,6 @@
 import ReadLine from "node:readline";
 import process from "node:process";
-import { CLICommand, commands } from "./commands/index.js";
-
-export const rl = ReadLine.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  prompt: "Pokedex > ",
-});
+import { type State, type CLICommand } from "./state.js";
 
 export function cleanInput(input: string): string[] {
   return input
@@ -16,7 +10,9 @@ export function cleanInput(input: string): string[] {
     .filter((word) => word.length > 0);
 }
 
-export function startREPL() {
+export function startREPL(state: State) {
+  let rl = state.rl;
+  let commands = state.commands;
   rl.prompt();
 
   rl.on("line", (input) => {
@@ -27,7 +23,7 @@ export function startREPL() {
     if (command === undefined) {
       console.log("Unknown command");
     } else if (cleanedInput.length !== 0) {
-      command.callback(commands);
+      command.callback(state);
     }
 
     rl.prompt();

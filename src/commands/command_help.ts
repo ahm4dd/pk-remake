@@ -1,10 +1,10 @@
-import { type CommandRegistry, commands } from "./index.js";
+import { type State } from "./../state.js";
 
-export function commandHelp(commands: CommandRegistry) {
+export function commandHelp(state: State) {
   console.log("Welcome to the Pokedex!");
   console.log("Usage:\n");
 
-  for (let command in commands) {
-    console.log(`${command}: ${commands[command].description}`);
+  for (let command in state.commands) {
+    console.log(`${command}: ${state.commands[command].description}`);
   }
 }
