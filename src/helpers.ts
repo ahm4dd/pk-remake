@@ -1,6 +1,5 @@
 import { ShallowLocations } from "./pokeapi.js";
 
-// TODO: implement printLocations()
 export function printLocations(locations: ShallowLocations) {
   console.log("Locations: ");
   console.log("------------");
