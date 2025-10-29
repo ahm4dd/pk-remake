@@ -1,0 +1,5 @@
+[33mcommit a3c4e7df12166afa02fb4062fd3983c501815964[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Ahm4dd <ahmed.emad.edu@gmail.com>
+Date:   Mon Oct 27 12:45:32 2025 +0300
+
+    feat: added state and refactored code to use state

@@ -25,5 +25,8 @@
     "typescript": "^5.9.3",
     "vitest": "^4.0.3"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "zod": "^4.1.12"
+  }
 }
