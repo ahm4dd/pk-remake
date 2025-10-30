@@ -1,12 +1,23 @@
 import { z } from "zod";
+import { Cache } from "./pokecache.js";
 export class PokeAPI {
   private static readonly baseUrl: string = "https://pokeapi.co/api/v2";
+  private cache: Cache;
 
-  constructor() {}
+  constructor(cacheInterval: number = 360000) {
+    this.cache = new Cache(cacheInterval);
+  }
 
   async fetchLocations(pageURL?: string): Promise<ShallowLocations> {
     let fullURL =
-      pageURL !== undefined ? pageURL : PokeAPI.baseUrl + `/location/`;
+      pageURL !== undefined
+        ? pageURL
+        : PokeAPI.baseUrl + `/location/?offset=0&limit=20`;
+
+    let cacheData = this.cache.get(fullURL);
+    if (cacheData) {
+      return cacheData as ShallowLocations;
+    }
 
     try {
       let data = await fetch(fullURL, {
@@ -18,6 +29,9 @@ export class PokeAPI {
       });
 
       let parsedData = shallowLocationsSchema.parse(await data.json());
+
+      this.cache.add(fullURL, parsedData);
+
       return parsedData;
     } catch (err: unknown) {
       throw new Error("The data received was in an incorrect format.");
@@ -25,6 +39,11 @@ export class PokeAPI {
   }
   async fetchLocation(locationName: string): Promise<Location> {
     let fullURL = PokeAPI.baseUrl + `/${locationName}/`;
+
+    let cacheData = this.cache.get(fullURL);
+    if (cacheData) {
+      return cacheData as Location;
+    }
 
     try {
       let data = await fetch(fullURL, {
@@ -36,6 +55,9 @@ export class PokeAPI {
       });
 
       let parsedData = locationSchema.parse(await data.json());
+
+      this.cache.add(fullURL, parsedData);
+
       return parsedData;
     } catch (err: unknown) {
       throw new Error("The data received was in an incorrect format.");
