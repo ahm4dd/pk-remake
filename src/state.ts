@@ -3,6 +3,7 @@ import { commandExit } from "./commands/command_exit.js";
 import { commandHelp } from "./commands/command_help.js";
 import { PokeAPI } from "./pokeapi.js";
 import { commandMap } from "./commands/command_map.js";
+import { commandMapb } from "./commands/command_mapb.js";
 
 export type CLICommand = {
   name: string;
@@ -28,6 +29,12 @@ const commands = {
     name: "map",
     description: "Show the next 20 locations in the Pokemon world.",
     callback: commandMap,
+  },
+
+  mapb: {
+    name: "mapb",
+    description: "Show the previous 20 locations in the Pokemon world.",
+    callback: commandMapb,
   },
 } as const;
 
