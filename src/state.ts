@@ -4,42 +4,60 @@ import { commandHelp } from "./commands/command_help.js";
 import { PokeAPI } from "./pokeapi.js";
 import { commandMap } from "./commands/command_map.js";
 import { commandMapb } from "./commands/command_mapb.js";
+import { commandExplore } from "./commands/command_explore.js";
 
 export type CLICommand = {
   name: string;
   description: string;
   callback: CommandHandler;
+  minNumbOfArgs: number;
+  maxNumbOfArgs?: number;
 };
 export type CommandRegistry = Record<Command, CLICommand>;
 export type CommandHandler = (state: State) => void;
-export type Command = keyof typeof commands;
+export type Command = "exit" | "help" | "map" | "mapb" | "explore";
 
-const commands = {
+const commands: CommandRegistry = {
   exit: {
     name: "exit",
     description: "Exits the Pokedex",
     callback: commandExit,
+    minNumbOfArgs: 0,
+    maxNumbOfArgs: 0,
   },
   help: {
     name: "help",
     description: "Displays a help message",
     callback: commandHelp,
+    minNumbOfArgs: 0,
+    maxNumbOfArgs: 0,
   },
   map: {
     name: "map",
     description: "Show the next 20 locations in the Pokemon world.",
     callback: commandMap,
+    minNumbOfArgs: 0,
+    maxNumbOfArgs: 0,
   },
-
   mapb: {
     name: "mapb",
     description: "Show the previous 20 locations in the Pokemon world.",
     callback: commandMapb,
+    minNumbOfArgs: 0,
+    maxNumbOfArgs: 0,
+  },
+  explore: {
+    name: "explore",
+    description:
+      "Explore a location-area and display all encountered Pokemons. Expects at least 1 argument (The location of the area to explore)",
+    callback: commandExplore,
+    minNumbOfArgs: 1,
+    maxNumbOfArgs: 1,
   },
 } as const;
 
 export type Input = {
-  command: string;
+  command: Command;
   args: string[];
 };
 
@@ -64,7 +82,7 @@ export function initState(): State {
     commands,
     pokeapi: new PokeAPI(),
     input: {
-      command: "",
+      command: "help",
       args: [],
     },
   };

@@ -1,4 +1,4 @@
-import { ShallowLocations } from "./pokeapi.js";
+import { PokemonEncounters, ShallowLocations } from "./pokeapi.js";
 
 export function printLocations(locations: ShallowLocations) {
   console.log("Locations: ");
@@ -6,6 +6,17 @@ export function printLocations(locations: ShallowLocations) {
 
   for (const location of locations.results) {
     console.log(`- ${location.name}`);
+  }
+
+  console.log("------------");
+}
+
+export function printPokemons(pokemon_encounters: PokemonEncounters) {
+  console.log("Pokemons: ");
+  console.log("------------");
+
+  for (const pokemon of pokemon_encounters) {
+    console.log(`- ${pokemon.pokemon.name}`);
   }
 
   console.log("------------");

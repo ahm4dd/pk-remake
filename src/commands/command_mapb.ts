@@ -1,5 +1,5 @@
 import { printLocations } from "./../helpers.js";
-import { State } from "./../state.js";
+import { type State } from "./../state.js";
 
 export async function commandMapb(state: State) {
   try {

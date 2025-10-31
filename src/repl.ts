@@ -19,10 +19,13 @@ export async function startREPL(state: State) {
     let cleanedInput = cleanInput(input);
     let command: CLICommand | undefined =
       commands[cleanedInput[0] as Command] ?? undefined;
+    let args: string[] = cleanedInput.slice(1);
 
     if (command === undefined) {
       console.log("Unknown command");
     } else if (cleanedInput.length !== 0) {
+      state.input.command = cleanedInput[0] as Command;
+      state.input.args = args;
       await command.callback(state);
     }
 

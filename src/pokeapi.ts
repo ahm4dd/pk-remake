@@ -38,7 +38,7 @@ export class PokeAPI {
     }
   }
   async fetchLocation(locationName: string): Promise<Location> {
-    let fullURL = PokeAPI.baseUrl + `/${locationName}/`;
+    let fullURL = PokeAPI.baseUrl + `/location-area/${locationName}`;
 
     let cacheData = this.cache.get(fullURL);
     if (cacheData) {
@@ -54,7 +54,7 @@ export class PokeAPI {
         },
       });
 
-      let parsedData = locationSchema.parse(await data.json());
+      let parsedData = locationAreaSchema.parse(await data.json());
 
       this.cache.add(fullURL, parsedData);
 
@@ -67,35 +67,10 @@ export class PokeAPI {
 
 export type ShallowLocations = z.infer<typeof shallowLocationsSchema>;
 export type ShallowLocation = z.infer<typeof shallowLocationSchema>;
-export type Location = z.infer<typeof locationSchema>;
-export type Area = z.infer<typeof areaSchema>;
-export type Index = z.infer<typeof indexSchema>;
-export type Generation = z.infer<typeof generationSchema>;
-export type Name = z.infer<typeof nameSchema>;
-export type Language = z.infer<typeof languageSchema>;
-export type Region = z.infer<typeof regionSchema>;
+export type Location = z.infer<typeof locationAreaSchema>;
+export type PokemonEncounters = z.infer<typeof pokemonEncounterArraySchema>;
 
 export const shallowLocationSchema = z.object({
-  name: z.string(),
-  url: z.string(),
-});
-
-export const areaSchema = z.object({
-  name: z.string(),
-  url: z.string(),
-});
-
-export const generationSchema = z.object({
-  name: z.string(),
-  url: z.string(),
-});
-
-export const languageSchema = z.object({
-  name: z.string(),
-  url: z.string(),
-});
-
-export const regionSchema = z.object({
   name: z.string(),
   url: z.string(),
 });
@@ -107,9 +82,44 @@ export const shallowLocationsSchema = z.object({
   results: z.array(shallowLocationSchema),
 });
 
-export const indexSchema = z.object({
-  game_index: z.number(),
-  generation: generationSchema,
+export const encounterMethodSchema = z.object({
+  name: z.string(),
+  url: z.string(),
+});
+
+export const versionSchema = z.object({
+  name: z.string(),
+  url: z.string(),
+});
+
+export const locationSchema = z.object({
+  name: z.string(),
+  url: z.string(),
+});
+
+export const languageSchema = z.object({
+  name: z.string(),
+  url: z.string(),
+});
+
+export const pokemonSchema = z.object({
+  name: z.string(),
+  url: z.string(),
+});
+
+export const methodSchema = z.object({
+  name: z.string(),
+  url: z.string(),
+});
+
+export const version2Schema = z.object({
+  name: z.string(),
+  url: z.string(),
+});
+
+export const versionDetailSchema = z.object({
+  rate: z.number(),
+  version: versionSchema,
 });
 
 export const nameSchema = z.object({
@@ -117,11 +127,38 @@ export const nameSchema = z.object({
   name: z.string(),
 });
 
-export const locationSchema = z.object({
-  areas: z.array(areaSchema),
-  game_indices: z.array(indexSchema),
+export const encounterDetailSchema = z.object({
+  chance: z.number(),
+  condition_values: z.array(z.any()),
+  max_level: z.number(),
+  method: methodSchema,
+  min_level: z.number(),
+});
+
+export const encounterMethodRateSchema = z.object({
+  encounter_method: encounterMethodSchema,
+  version_details: z.array(versionDetailSchema),
+});
+
+export const versionDetail2Schema = z.object({
+  encounter_details: z.array(encounterDetailSchema),
+  max_chance: z.number(),
+  version: version2Schema,
+});
+
+export const pokemonEncounterSchema = z.object({
+  pokemon: pokemonSchema,
+  version_details: z.array(versionDetail2Schema),
+});
+
+export const pokemonEncounterArraySchema = z.array(pokemonEncounterSchema);
+
+export const locationAreaSchema = z.object({
+  encounter_method_rates: z.array(encounterMethodRateSchema),
+  game_index: z.number(),
   id: z.number(),
+  location: locationSchema,
   name: z.string(),
   names: z.array(nameSchema),
-  region: regionSchema,
+  pokemon_encounters: pokemonEncounterArraySchema,
 });
