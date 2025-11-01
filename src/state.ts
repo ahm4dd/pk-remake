@@ -5,6 +5,7 @@ import { PokeAPI } from "./pokeapi.js";
 import { commandMap } from "./commands/command_map.js";
 import { commandMapb } from "./commands/command_mapb.js";
 import { commandExplore } from "./commands/command_explore.js";
+import { commandCatch } from "./commands/command_catch.js";
 
 export type CLICommand = {
   name: string;
@@ -15,7 +16,7 @@ export type CLICommand = {
 };
 export type CommandRegistry = Record<Command, CLICommand>;
 export type CommandHandler = (state: State) => void;
-export type Command = "exit" | "help" | "map" | "mapb" | "explore";
+export type Command = "exit" | "help" | "map" | "mapb" | "explore" | "catch";
 
 const commands: CommandRegistry = {
   exit: {
@@ -53,6 +54,14 @@ const commands: CommandRegistry = {
     callback: commandExplore,
     minNumbOfArgs: 1,
     maxNumbOfArgs: 1,
+  },
+  catch: {
+    name: "catch",
+    description:
+      "Tries to catch a Pokemon depending on a ball thrown. Expects at least 1 argument (The Pokemon's name), \nand takes 1 optional argument (The ball thrown).\nYou can display the ball types by using the `catch --balls` command",
+    callback: commandCatch,
+    minNumbOfArgs: 1,
+    maxNumbOfArgs: 2,
   },
 } as const;
 
