@@ -40,10 +40,11 @@ export interface Achievement {
 class DatabaseManager {
   private db: Database.Database;
 
-  constructor() {
-    const dbPath = path.join(process.cwd(), 'pokemon.db');
-    const exists = fs.existsSync(dbPath);
-    this.db = new Database(dbPath);
+  constructor(dbPath?: string) {
+    const defaultPath = path.join(process.cwd(), 'pokemon.db');
+    const finalPath = dbPath || defaultPath;
+    const exists = fs.existsSync(finalPath);
+    this.db = new Database(finalPath);
 
     if (!exists) {
       this.initSchema();
@@ -208,3 +209,6 @@ class DatabaseManager {
 }
 
 export const db = new DatabaseManager();
+
+// For tests
+export const createTestDB = () => new DatabaseManager(':memory:');

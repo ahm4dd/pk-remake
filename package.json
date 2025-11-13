@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "vitest --run",
+    "test:coverage": "vitest --run --coverage",
     "build": "npx tsc",
     "start": "node dist/main.js",
     "dev": "npx tsc && node dist/main.js"
