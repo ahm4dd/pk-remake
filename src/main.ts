@@ -5,6 +5,7 @@ import figlet from "figlet";
 import { Commander } from "./commander.js";
 import { initState } from "./state.js";
 import { setTheme, getThemeColor, themes, currentTheme } from "./theme.js";
+import { UserManager } from "./user.js";
 // Import command functions
 import { commandExit } from "./commands/command_exit.js";
 import { commandHelp } from "./commands/command_help.js";
@@ -125,23 +126,53 @@ async function main() {
       await commandLearn(state);
     });
 
+  commander.command('register', 'Create a new user account.', 'System')
+    .argument('username', 'Your desired username.', true)
+    .argument('password', 'Your password.', true)
+    .setAction(async (args) => {
+      try {
+        const user = await UserManager.register(args[0], args[1]);
+        if (user) {
+          state.currentUser = user;
+          console.log(chalk.green(`Welcome, ${user.username}! Account created successfully.`));
+        }
+      } catch (error) {
+        console.log(chalk.red(`Registration failed: ${(error as Error).message}`));
+      }
+    });
+
+  commander.command('login', 'Log in to your account.', 'System')
+    .argument('username', 'Your username.', true)
+    .argument('password', 'Your password.', true)
+    .setAction(async (args) => {
+      try {
+        const user = await UserManager.login(args[0], args[1]);
+        if (user) {
+          state.currentUser = user;
+          console.log(chalk.green(`Welcome back, ${user.username}!`));
+        }
+      } catch (error) {
+        console.log(chalk.red(`Login failed: ${(error as Error).message}`));
+      }
+    });
+
+  commander.command('logout', 'Log out of your account.', 'System')
+    .setAction(() => {
+      if (state.currentUser) {
+        console.log(chalk.yellow(`Goodbye, ${state.currentUser.username}!`));
+        state.currentUser = null;
+        state.player.pokemon = [];
+      } else {
+        console.log(chalk.yellow('You are not logged in.'));
+      }
+    });
+
   commander.command('theme', 'Changes the CLI theme.', 'System')
     .argument('theme_name', 'The theme to apply (default, pokemon, dark).', false)
     .setAction((args) => {
-      const colorMap: Record<string, (text: string) => string> = {
-        blue: chalk.blue,
-        cyan: chalk.cyan,
-        green: chalk.green,
-        red: chalk.red,
-        yellow: chalk.yellow,
-        gray: chalk.gray,
-        magenta: chalk.magenta,
-        white: chalk.white,
-      };
-
-      const successColor = colorMap[getThemeColor('success')] || chalk.green;
-      const errorColor = colorMap[getThemeColor('error')] || chalk.red;
-      const infoColor = colorMap[getThemeColor('info')] || chalk.gray;
+      const successColor = (text: string) => (chalk as any)[getThemeColor('success')](text);
+      const errorColor = (text: string) => (chalk as any)[getThemeColor('error')](text);
+      const infoColor = (text: string) => (chalk as any)[getThemeColor('info')](text);
 
       if (args.length > 0) {
         if (setTheme(args[0])) {

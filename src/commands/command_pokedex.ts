@@ -1,10 +1,26 @@
 import chalk from "chalk";
 import Table from "cli-table3";
+import { db } from "./../database.js";
 import { type State } from "./../state.js";
 
 export async function commandPokedex(state: State) {
-  const caughtPokemon = state.player.pokemon;
+  let caughtPokemon = state.player.pokemon;
   const sortBy = state.input.options?.sort || 'index';
+
+  // Load from DB if logged in
+  if (state.currentUser) {
+    const dbPokemon = db.getUserPokemon(state.currentUser.id);
+    caughtPokemon = dbPokemon.map(p => ({
+      name: p.name,
+      experience: p.experience,
+      baseCatchRate: 0, // Not stored, use default
+      level: p.level,
+      status: null,
+      stats: JSON.parse(p.stats),
+      types: JSON.parse(p.types),
+      moves: JSON.parse(p.moves),
+    }));
+  }
 
   if (caughtPokemon.length === 0) {
     console.log(chalk.yellow("You haven't caught any Pokemon yet! 🐾"));

@@ -2,6 +2,7 @@ import { type State } from "./../state.js";
 import chalk from "chalk";
 import ora from "ora";
 import { getPokemonAscii } from "./../ascii.js";
+import { db } from "./../database.js";
 import { type Pokemon, type Pokeball, POKEBALLS, getPokemonCatchProbability, StatusCondition, mapPokemonStats, mapPokemonTypes, mapPokemonMoves } from "./../pokemon.js";
 import { PokeAPI } from "./../pokeapi.js";
 
@@ -82,10 +83,31 @@ export async function commandCatch(state: State) {
     if (randomValue < catchProbability) {
       console.log(chalk.green(`You caught a ${pokemon.name} (Level ${pokemon.level})${pokemon.status ? ` (${pokemon.status})` : ''}!`));
       console.log(getPokemonAscii(pokemon.name));
+
+      // Save to DB if logged in
+      if (state.currentUser) {
+        db.savePokemon(state.currentUser.id, {
+          name: pokemon.name,
+          level: pokemon.level,
+          experience: pokemon.experience,
+          stats: JSON.stringify(pokemon.stats),
+          types: JSON.stringify(pokemon.types),
+          moves: JSON.stringify(pokemon.moves),
+        });
+        console.log(chalk.gray("💡 Pokemon saved to your collection!"));
+      } else {
+        state.player.pokemon.push(pokemon);
+        console.log(chalk.gray("💡 Tip: Register an account to save your Pokemon permanently!"));
+      }
+
       console.log(chalk.gray("💡 Tip: Use 'pokedex' to view your caught Pokemon!"));
     } else {
       console.log(chalk.red(`Aww, ${pokemon.name} got away!`));
       console.log(chalk.gray("💡 Tip: Try using a better ball like 'greatball' for higher catch rates!"));
+    }
+    // Show random tip
+    if (Math.random() < 0.3) { // 30% chance
+      console.log(chalk.gray(tips[Math.floor(Math.random() * tips.length)]));
     }
     // Show random tip
     if (Math.random() < 0.3) { // 30% chance

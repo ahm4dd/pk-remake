@@ -168,10 +168,13 @@ export type Player = {
   pokemon: Pokemon[];
 };
 
+import { User } from './database.js';
+
 export type State = {
   rl: ReadLine.Interface;
   commands: CommandRegistry;
   pokeapi: PokeAPI;
+  currentUser: User | null;
   player: Player;
   nextLocationsUrl?: string;
   prevLocationsUrl?: string;
@@ -189,6 +192,7 @@ export function initState(): State {
     rl,
     commands,
     pokeapi: new PokeAPI(),
+    currentUser: null,
     player: {
       pokemon: [],
     },
