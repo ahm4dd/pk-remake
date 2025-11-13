@@ -11,6 +11,14 @@ import { commandRelease } from "./commands/command_release.js";
 import { commandBattle } from "./commands/command_battle.js";
 import { commandEvolve } from "./commands/command_evolve.js";
 import { commandLearn } from "./commands/command_learn.js";
+import { commandTrade } from "./commands/command_trade.js";
+import { commandDaily } from "./commands/command_daily.js";
+import { commandLeaderboard } from "./commands/command_leaderboard.js";
+import { commandShop } from "./commands/command_shop.js";
+import { commandUse } from "./commands/command_use.js";
+import { commandSave, commandLoad } from "./commands/command_save.js";
+import { commandLanguage } from "./commands/command_language.js";
+import { commandTheme } from "./commands/command_theme.js";
 import { Pokemon } from "./pokemon.js";
 
 export type CLICommand = {
@@ -26,7 +34,7 @@ export type CLICommand = {
 
 export type CommandRegistry = Record<Command, CLICommand>;
 export type CommandHandler = (state: State) => void | Promise<void>;
-export type Command = "exit" | "help" | "map" | "mapb" | "explore" | "catch" | "pokedex" | "release" | "battle" | "evolve" | "learn";
+export type Command = "exit" | "help" | "map" | "mapb" | "explore" | "catch" | "pokedex" | "release" | "battle" | "evolve" | "learn" | "trade" | "daily" | "leaderboard" | "shop" | "use" | "save" | "load" | "language" | "theme";
 
 const commands: CommandRegistry = {
   exit: {
@@ -155,6 +163,110 @@ const commands: CommandRegistry = {
     options: [],
     examples: ["learn pikachu thunderbolt"],
     callback: commandLearn,
+  },
+  trade: {
+    name: "trade",
+    description: "Manage Pokemon trades with other users.",
+    usage: "trade <subcommand> [args]",
+    category: "Pokemon Management",
+    arguments: [
+      { name: "subcommand", description: "offer, list, accept, reject", required: true },
+    ],
+    options: [],
+    examples: ["trade offer alice 1", "trade list", "trade accept 1 2"],
+    callback: commandTrade,
+  },
+  daily: {
+    name: "daily",
+    description: "View and complete daily challenges for XP rewards.",
+    usage: "daily",
+    category: "Gamification",
+    arguments: [],
+    options: [],
+    examples: ["daily"],
+    callback: commandDaily,
+  },
+  leaderboard: {
+    name: "leaderboard",
+    description: "View the top players by XP.",
+    usage: "leaderboard",
+    category: "Social",
+    arguments: [],
+    options: [],
+    examples: ["leaderboard"],
+    callback: commandLeaderboard,
+  },
+  shop: {
+    name: "shop",
+    description: "Buy items with XP.",
+    usage: "shop [buy <item_name>]",
+    category: "Items",
+    arguments: [
+      { name: "subcommand", description: "buy", required: false },
+      { name: "item_name", description: "Name of item to buy", required: false },
+    ],
+    options: [],
+    examples: ["shop", "shop buy potion"],
+    callback: commandShop,
+  },
+  use: {
+    name: "use",
+    description: "Use an item on a Pokemon.",
+    usage: "use <item_name> <pokemon_index>",
+    category: "Items",
+    arguments: [
+      { name: "item_name", description: "Name of item to use", required: true },
+      { name: "pokemon_index", description: "Index of Pokemon", required: true },
+    ],
+    options: [],
+    examples: ["use potion 1"],
+    callback: commandUse,
+  },
+  save: {
+    name: "save",
+    description: "Save your profile to a file.",
+    usage: "save",
+    category: "System",
+    arguments: [],
+    options: [],
+    examples: ["save"],
+    callback: commandSave,
+  },
+  load: {
+    name: "load",
+    description: "Load a profile from a file.",
+    usage: "load <filename>",
+    category: "System",
+    arguments: [
+      { name: "filename", description: "Name of the file to load", required: true },
+    ],
+    options: [],
+    examples: ["load profile.json"],
+    callback: commandLoad,
+  },
+  language: {
+    name: "language",
+    description: "Set the language for the interface.",
+    usage: "language <lang>",
+    category: "System",
+    arguments: [
+      { name: "lang", description: "Language code (en, es)", required: true },
+    ],
+    options: [],
+    examples: ["language es"],
+    callback: commandLanguage,
+  },
+  theme: {
+    name: "theme",
+    description: "Set the theme for the interface.",
+    usage: "theme <theme_name>",
+    category: "System",
+    arguments: [
+      { name: "theme_name", description: "Theme name (default, dark, no-color)", required: true },
+    ],
+    options: [],
+    examples: ["theme no-color"],
+    callback: commandTheme,
   },
 } as const;
 

@@ -2,6 +2,7 @@ import chalk from "chalk";
 import ora from "ora";
 import { printPokemons } from "./../helpers.js";
 import { type State } from "./../state.js";
+import { db } from "./../database.js";
 
 export async function commandExplore(state: State) {
   try {
@@ -17,6 +18,10 @@ export async function commandExplore(state: State) {
     spinner.succeed(chalk.green(`Explored ${locationName}!`));
 
     printPokemons(locationInfo.pokemon_encounters);
+
+    if (state.currentUser) {
+      db.updateChallengeProgress(state.currentUser.id, 'explore');
+    }
   } catch (err: unknown) {
     console.error(chalk.red(`Error exploring: ${err}`));
   }

@@ -199,7 +199,7 @@ async function main() {
           console.log(errorColor(`Unknown theme: ${args[0]}. Available: ${Object.keys(themes).join(', ')}`));
         }
       } else {
-        const currentName = Object.keys(themes).find(t => themes[t] === currentTheme) || 'default';
+        const currentName = Object.keys(themes).find(t => (themes as any)[t] === currentTheme) || 'default';
         console.log(infoColor(`Current theme: ${currentName}`));
         console.log(infoColor(`Available themes: ${Object.keys(themes).join(', ')}`));
       }

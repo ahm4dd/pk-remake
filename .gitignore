@@ -3,3 +3,5 @@
 dist/
 pokemon.db
 *.db
+DEVELOPER_GUIDE.md
+HOW_IT_WORKS.md

@@ -108,6 +108,7 @@ export async function commandCatch(state: State) {
           moves: JSON.stringify(pokemon.moves),
         });
         GamificationManager.onCatch(state.currentUser.id, pokemon.name);
+        db.updateChallengeProgress(state.currentUser.id, 'catch');
         console.log(chalk.gray("💡 Pokemon saved to your collection!"));
       } else {
         state.player.pokemon.push(pokemon);

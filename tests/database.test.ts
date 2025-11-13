@@ -47,7 +47,7 @@ describe('Database Tests', () => {
     const inventory = db.getInventory(user.id);
     expect(inventory.length).toBe(1);
     expect(inventory[0].item_name).toBe('pokeball');
-    expect(inventory[0].quantity).toBe(5);
+    expect(inventory[0].quantity).toBe(15); // 10 from create + 5 added
   });
 
   it('should handle achievements', () => {
