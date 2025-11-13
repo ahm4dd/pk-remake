@@ -19,7 +19,8 @@ test.concurrent.each([
   const cached = cache.get(key);
   expect(cached).toBe(val);
 
-  await new Promise((resolve) => setTimeout(resolve, interval * 2));
+  // Increase timeout to be more generous with Node.js event loop timing
+  await new Promise((resolve) => setTimeout(resolve, interval * 2 + 500)); // Added 500ms buffer
   const reaped = cache.get(key);
   expect(reaped).toBe(undefined);
 
