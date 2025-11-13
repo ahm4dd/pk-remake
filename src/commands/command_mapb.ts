@@ -5,13 +5,14 @@ import { type State } from "./../state.js";
 
 export async function commandMapb(state: State) {
   try {
+    if (!state.prevLocationsUrl) {
+      console.log(chalk.yellow("No previous page available. Use 'map' to load locations first."));
+      return;
+    }
+
     const spinner = ora(chalk.blue("Fetching previous locations...")).start();
 
-    let locations = await state.pokeapi.fetchLocations(
-      state.prevLocationsUrl !== "" || state.prevLocationsUrl !== undefined
-        ? state.prevLocationsUrl
-        : undefined
-    );
+    let locations = await state.pokeapi.fetchLocations(state.prevLocationsUrl);
 
     spinner.succeed(chalk.green("Previous locations loaded!"));
     printLocations(locations);

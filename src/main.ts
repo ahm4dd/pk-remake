@@ -322,16 +322,20 @@ async function startREPL(commander: Commander, state: any) {
         break;
       }
 
-      const args = trimmed.split(/\s+/);
-      const { command, args: parsedArgs, options, help } = commander.parse(args);
+      try {
+        const args = trimmed.split(/\s+/);
+        const { command, args: parsedArgs, options, help } = commander.parse(args);
 
-      if (help && command) {
-        console.log(command.help());
-      } else if (command) {
-        await command.action(parsedArgs, options);
-      } else {
-        console.log(chalk.red(`Unknown command: ${args[0]}`));
-        commander.showHelp();
+        if (help && command) {
+          console.log(command.help());
+        } else if (command) {
+          await command.action(parsedArgs, options);
+        } else {
+          console.log(chalk.red(`Unknown command: ${args[0]}`));
+          commander.showHelp();
+        }
+      } catch (error) {
+        console.error(chalk.red(`Command error: ${(error as Error).message}`));
       }
     } catch (error) {
       console.error(chalk.red(`Error: ${(error as Error).message}`));

@@ -125,6 +125,12 @@ export class Commander {
       return { args: [cmdName, ...rest], options: {}, help: false };
     }
 
+    // Validate required args
+    const requiredArgs = command.args.filter(arg => arg.required);
+    if (rest.length < requiredArgs.length) {
+      throw new Error(`Command '${cmdName}' requires at least ${requiredArgs.length} arguments.`);
+    }
+
     let parsedArgs: any[] = [];
     let parsedOptions: Record<string, any> = {};
     let help = false;

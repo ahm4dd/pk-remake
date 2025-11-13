@@ -86,40 +86,51 @@ export class PokeAPI {
       return cacheData as T;
     }
 
-    // Timeout wrapper
-    const timeout = 10000; // 10 seconds
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      // Timeout wrapper
+      const timeout = 10000; // 10 seconds
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    try {
-      const response = await fetch(url, {
-        method: "GET",
-        mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-      });
+      try {
+        const response = await fetch(url, {
+          method: "GET",
+          mode: "cors",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
+        });
 
-      clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+          if (response.status >= 500 && attempt < maxRetries) {
+            console.warn(`Server error (${response.status}) for ${url}, retrying...`);
+            continue; // Retry
+          }
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const parsedData = schema.parse(data);
+
+        this.cache.add(url, parsedData);
+        return parsedData;
+      } catch (err: unknown) {
+        clearTimeout(timeoutId);
+        if (err instanceof Error && err.name === 'AbortError') {
+          throw new Error(`Request timed out for ${url}`);
+        }
+        if (attempt === maxRetries) {
+          console.error(`Error fetching or parsing data from ${url} after ${maxRetries} attempts:`, err);
+          throw new Error("Failed to fetch or parse data from PokeAPI.");
+        }
+        console.warn(`Attempt ${attempt} failed for ${url}, retrying...`);
       }
-
-      const data = await response.json();
-      const parsedData = schema.parse(data);
-
-      this.cache.add(url, parsedData);
-      return parsedData;
-    } catch (err: unknown) {
-      clearTimeout(timeoutId);
-      if (err instanceof Error && err.name === 'AbortError') {
-        throw new Error(`Request timed out for ${url}`);
-      }
-      console.error(`Error fetching or parsing data from ${url}:`, err);
-      throw new Error("Failed to fetch or parse data from PokeAPI.");
     }
+    throw new Error("Unexpected error in fetch.");
   }
 
   async getPokemonSpecies(name: string): Promise<z.infer<typeof pokemonSpeciesSchema>> {

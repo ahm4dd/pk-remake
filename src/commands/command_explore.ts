@@ -12,6 +12,11 @@ export async function commandExplore(state: State) {
     }
 
     const locationName = state.input.args[0];
+    if (!locationName.includes('-area')) {
+      console.log(chalk.yellow("Location names should end with '-area'. Try something like 'pallet-town-area'."));
+      return;
+    }
+
     const spinner = ora(chalk.blue(`Exploring ${locationName}...`)).start();
 
     let locationInfo = await state.pokeapi.fetchLocation(locationName);

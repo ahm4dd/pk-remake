@@ -161,23 +161,28 @@ class DatabaseManager {
 
   // User methods
   createUser(username: string, passwordHash: string): User {
-    const stmt = this.db.prepare(`
-      INSERT INTO users (username, password_hash) VALUES (?, ?)
-    `);
-    const result = stmt.run(username, passwordHash);
-    const userId = result.lastInsertRowid as number;
+    try {
+      const stmt = this.db.prepare(`
+        INSERT INTO users (username, password_hash) VALUES (?, ?)
+      `);
+      const result = stmt.run(username, passwordHash);
+      const userId = result.lastInsertRowid as number;
 
-    // Add default inventory
-    this.setInventory(userId, 'ball', 'pokeball', 10);
+      // Add default inventory
+      this.setInventory(userId, 'ball', 'pokeball', 10);
 
-    return {
-      id: userId,
-      username,
-      password_hash: passwordHash,
-      level: 1,
-      xp: 0,
-      created_at: new Date().toISOString(),
-    };
+      return {
+        id: userId,
+        username,
+        password_hash: passwordHash,
+        level: 1,
+        xp: 0,
+        created_at: new Date().toISOString(),
+      };
+    } catch (err: unknown) {
+      console.error(`DB Error creating user: ${err}`);
+      throw new Error("Failed to create user. Username may already exist.");
+    }
   }
 
   getUserByUsername(username: string): User | null {
