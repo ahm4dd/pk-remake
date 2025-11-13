@@ -1,3 +1,7 @@
+// @ts-ignore
+import chalk from "chalk";
+// @ts-ignore
+import chalkAnimation from "chalk-animation";
 import { type State } from "./../state.js";
 import { Pokemon, mapPokemonStats, mapPokemonTypes, mapPokemonMoves } from "./../pokemon.js";
 import { PokeAPI } from "./../pokeapi.js";
@@ -34,7 +38,7 @@ export async function commandEvolve(state: State) {
   const pokemonIdentifier = parsedArgs[0];
 
   if (!pokemonIdentifier) {
-    console.log("Please specify a Pokemon to evolve (by name or index).");
+    console.log(chalk.red("Please specify a Pokemon to evolve (by name or index)."));
     return;
   }
 
@@ -53,7 +57,7 @@ export async function commandEvolve(state: State) {
   }
 
   if (pokemonIndexToEvolve === -1) {
-    console.log(`Pokemon '${pokemonIdentifier}' not found in your party.`);
+    console.log(chalk.red(`Pokemon '${pokemonIdentifier}' not found in your party.`));
     return;
   }
 
@@ -64,7 +68,7 @@ export async function commandEvolve(state: State) {
     // 1. Fetch Pokemon species data to get the evolution chain URL
     const speciesData = await pokeApi.getPokemonSpecies(pokemonToEvolve.name);
     if (!speciesData.evolution_chain) {
-      console.log(`${pokemonToEvolve.name} does not have an evolution chain.`);
+      console.log(chalk.yellow(`${pokemonToEvolve.name} does not have an evolution chain.`));
       return;
     }
 
@@ -79,7 +83,7 @@ export async function commandEvolve(state: State) {
     );
 
     if (!evolutionInfo) {
-      console.log(`${pokemonToEvolve.name} cannot evolve at this time (check level or evolution criteria).`);
+      console.log(chalk.yellow(`${pokemonToEvolve.name} cannot evolve at this time (check level or evolution criteria).`));
       return;
     }
 
@@ -88,13 +92,13 @@ export async function commandEvolve(state: State) {
     const evolvedPokemonSpecies = await pokeApi.getPokemonSpecies(evolutionInfo.evolvedName);
 
     if (!evolvedPokemonData || !evolvedPokemonSpecies) {
-      console.log(`Could not fetch data for the evolved form: ${evolutionInfo.evolvedName}`);
+      console.log(chalk.red(`Could not fetch data for the evolved form: ${evolutionInfo.evolvedName}`));
       return;
     }
 
     // Fetch moves for the evolved Pokemon (simplified: get first 4 moves)
     const evolvedPokemonMoves = await Promise.all(
-      evolvedPokemonData.moves.slice(0, 4).map(async (m: any) => {
+      (evolvedPokemonData.moves || []).slice(0, 4).map(async (m: any) => {
         const moveData = await pokeApi.getMoveData(m.move.name);
         return {
           name: moveData.name,
@@ -121,7 +125,8 @@ export async function commandEvolve(state: State) {
 
     // 6. Replace the old Pokemon with the evolved one
     playerPokemon[pokemonIndexToEvolve] = evolvedPokemon;
-    console.log(`Your ${pokemonToEvolve.name} evolved into ${evolvedPokemon.name}!`);
+    console.log(chalk.green(`✨ Your ${pokemonToEvolve.name} evolved into ${evolvedPokemon.name}! ✨`));
+    console.log(chalk.gray("💡 Tip: Evolved Pokemon are stronger – try battling with them!"));
 
   } catch (error) {
     console.error(`An error occurred during evolution for ${pokemonToEvolve.name}:`, error);

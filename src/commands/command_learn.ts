@@ -1,4 +1,5 @@
 import { type State } from "./../state.js";
+import chalk from "chalk";
 import { Pokemon, mapPokemonStats, mapPokemonTypes, mapPokemonMoves, Move, Stat } from "./../pokemon.js";
 import { PokeAPI } from "./../pokeapi.js";
 import ReadLine from "node:readline";
@@ -15,7 +16,7 @@ export async function commandLearn(state: State) {
   const moveName = parsedArgs[1];
 
   if (!pokemonIdentifier || !moveName) {
-    console.log("Please specify a Pokemon and a move to learn (e.g., 'learn pikachu thunderbolt').");
+    console.log(chalk.red("Please specify a Pokemon and a move to learn (e.g., 'learn pikachu thunderbolt')."));
     return;
   }
 
@@ -34,7 +35,7 @@ export async function commandLearn(state: State) {
   }
 
   if (pokemonIndexToLearn === -1) {
-    console.log(`Pokemon '${pokemonIdentifier}' not found in your party.`);
+    console.log(chalk.red(`Pokemon '${pokemonIdentifier}' not found in your party.`));
     return;
   }
 
@@ -45,7 +46,7 @@ export async function commandLearn(state: State) {
     // Fetch move data from PokeAPI
     const moveData = await pokeApi.getMoveData(moveName);
     if (!moveData) {
-      console.log(`Could not find data for move: ${moveName}`);
+      console.log(chalk.red(`Could not find data for move: ${moveName}`));
       return;
     }
 
@@ -60,12 +61,12 @@ export async function commandLearn(state: State) {
     // Manage Pokemon's move set (limit to 4 moves)
     if (pokemon.moves.length < 4) {
       pokemon.moves.push(newMove);
-      console.log(`${pokemon.name} learned ${newMove.name}!`);
+      console.log(chalk.green(`${pokemon.name} learned ${newMove.name}!`));
     } else {
       // If Pokemon already has 4 moves, ask which one to forget
-      console.log(`${pokemon.name} already knows 4 moves. Which move would you like to forget?`);
+      console.log(chalk.yellow(`${pokemon.name} already knows 4 moves. Which move would you like to forget?`));
       pokemon.moves.forEach((move, index) => {
-        console.log(`${index + 1}. ${move.name}`);
+        console.log(`${index + 1}. ${chalk.cyan(move.name)}`);
       });
 
       let moveIndexToForget = -1;
@@ -74,19 +75,19 @@ export async function commandLearn(state: State) {
         const forgetIndex = parseInt(forgetInput, 10) - 1;
 
         if (forgetInput === '0') {
-          console.log('Did not learn the move.');
+          console.log(chalk.red('Did not learn the move.'));
           return;
         } else if (forgetIndex >= 0 && forgetIndex < pokemon.moves.length) {
           moveIndexToForget = forgetIndex;
         } else {
-          console.log('Invalid input. Please enter a number from the list or 0.');
+          console.log(chalk.red('Invalid input. Please enter a number from the list or 0.'));
         }
       }
 
       // Replace the forgotten move with the new move
       const forgottenMove = pokemon.moves[moveIndexToForget];
       pokemon.moves[moveIndexToForget] = newMove;
-      console.log(`${pokemon.name} forgot ${forgottenMove.name} and learned ${newMove.name}!`);
+      console.log(chalk.green(`${pokemon.name} forgot ${forgottenMove.name} and learned ${newMove.name}!`));
     }
 
   } catch (error) {

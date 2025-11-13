@@ -94,7 +94,7 @@ describe('Evolve Command Tests', () => {
 
     await commandEvolve(mockState);
 
-    expect(consoleSpy).toHaveBeenCalledWith('Your Charmander evolved into charmeleon!');
+    expect(consoleSpy).toHaveBeenCalledWith('✨ Your Charmander evolved into charmeleon! ✨');
     expect(mockState.player.pokemon.length).toBe(1);
     expect(mockState.player.pokemon[0].name).toBe('charmeleon');
     expect(mockState.player.pokemon[0].level).toBe(16);

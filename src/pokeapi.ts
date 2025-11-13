@@ -20,6 +20,9 @@ const pokemonDataBaseSchema = z.object({
   types: z.array(z.object({
     type: z.object({ name: z.string() }),
   })),
+  moves: z.array(z.object({
+    move: z.object({ name: z.string() }),
+  })).optional(),
 });
 
 const moveSchema = z.object({
@@ -30,15 +33,21 @@ const moveSchema = z.object({
   accuracy: z.number().nullable(),
 });
 
+const nameSchema = z.object({
+  language: z.object({ name: z.string() }),
+  name: z.string(),
+});
+
 // Schema for a single evolution link in the chain
-const evolutionLinkSchema = z.object({
+const evolutionLinkSchema: z.ZodType<any> = z.object({
   is_baby: z.boolean(),
   species: z.object({ name: z.string() }),
   evolution_details: z.array(z.object({
     min_level: z.number().nullable(),
     trigger: z.object({ name: z.string() }),
     // Add other evolution triggers if needed (e.g., item, trade, time of day)
-  }))
+  })),
+  evolves_to: z.array(z.lazy(() => evolutionLinkSchema)),
 });
 
 // Schema for the evolution chain structure
@@ -77,6 +86,11 @@ export class PokeAPI {
       return cacheData as T;
     }
 
+    // Timeout wrapper
+    const timeout = 10000; // 10 seconds
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
     try {
       const response = await fetch(url, {
         method: "GET",
@@ -84,7 +98,10 @@ export class PokeAPI {
         headers: {
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -96,6 +113,10 @@ export class PokeAPI {
       this.cache.add(url, parsedData);
       return parsedData;
     } catch (err: unknown) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error(`Request timed out for ${url}`);
+      }
       console.error(`Error fetching or parsing data from ${url}:`, err);
       throw new Error("Failed to fetch or parse data from PokeAPI.");
     }

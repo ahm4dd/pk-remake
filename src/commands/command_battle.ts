@@ -1,7 +1,22 @@
 import { type State } from "./../state.js";
+// @ts-ignore
+import chalk from "chalk";
+// @ts-ignore
+import cliProgress from "cli-progress";
 import { Pokemon, POKEBALLS, getPokemonCatchProbability, mapPokemonStats, mapPokemonTypes, Move, Stat, StatusCondition, getTypeEffectiveness } from "./../pokemon.js";
 import { PokeAPI } from "./../pokeapi.js";
 import ReadLine from "node:readline";
+
+// Helper function to display HP bar
+function displayHpBar(name: string, currentHp: number, maxHp: number) {
+  const percentage = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
+  const barLength = 20;
+  const filled = Math.round((percentage / 100) * barLength);
+  const empty = barLength - filled;
+  const bar = '█'.repeat(filled) + '░'.repeat(empty);
+  const color = percentage > 50 ? chalk.green : percentage > 25 ? chalk.yellow : chalk.red;
+  console.log(`${name}: ${color(bar)} ${currentHp}/${maxHp} (${percentage.toFixed(1)}%)`);
+}
 
 // Type Effectiveness Chart (simplified)
 // Represents multipliers: 2 = super effective, 0.5 = not very effective, 1 = normal
@@ -87,9 +102,24 @@ export async function commandBattle(state: State) {
     return;
   }
 
-  console.log(`Initiating battle with a wild ${wildPokemonName}...`);
+   console.log(`Initiating battle with a wild ${wildPokemonName}...`);
 
-  try {
+   // Progress bar for battle preparation
+   const progressBar = new cliProgress.SingleBar({
+     format: 'Preparing Battle |' + chalk.cyan('{bar}') + '| {percentage}%',
+     barCompleteChar: '\u2588',
+     barIncompleteChar: '\u2591',
+     hideCursor: true
+   });
+   progressBar.start(100, 0);
+
+   for (let i = 0; i <= 100; i += 20) {
+     progressBar.update(i);
+     await new Promise(resolve => setTimeout(resolve, 100));
+   }
+   progressBar.stop();
+
+   try {
     const pokeApi = state.pokeapi;
     const pokemonSpecies = await pokeApi.getPokemonSpecies(wildPokemonName);
     const pokemonData = await pokeApi.getPokemonData(wildPokemonName);
@@ -101,7 +131,7 @@ export async function commandBattle(state: State) {
 
     // Fetch moves for the wild Pokemon (simplified: get first 4 moves)
     const wildPokemonMoves = await Promise.all(
-      pokemonData.moves.slice(0, 4).map(async (m: any) => {
+      (pokemonData.moves || []).slice(0, 4).map(async (m: any) => {
         const moveData = await pokeApi.getMoveData(m.move.name);
         return {
           name: moveData.name,

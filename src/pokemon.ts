@@ -27,10 +27,16 @@ export type Move = {
   accuracy: number | null;
 };
 
+export type Pokeball = {
+  name: string;
+  catchRateModifier: number;
+  description?: string;
+};
+
 export const POKEBALLS: Record<string, Pokeball> = {
-  pokeball: { name: "pokeball", catchRateModifier: 1 },
-  greatball: { name: "greatball", catchRateModifier: 1.5 },
-  ultraball: { name: "ultraball", catchRateModifier: 2 },
+  pokeball: { name: "pokeball", catchRateModifier: 1, description: "Standard effectiveness" },
+  greatball: { name: "greatball", catchRateModifier: 1.5, description: "Better than standard" },
+  ultraball: { name: "ultraball", catchRateModifier: 2, description: "Highest effectiveness" },
 };
 
 export function getPokemonCatchProbability(pokemon: Pokemon, ball: Pokeball): number {
@@ -120,25 +126,28 @@ export function getTypeEffectiveness(moveType: string, defenderTypes: string[]):
 
 // Helper function to map API stat names to a consistent format
 export function mapPokemonStats(apiStats: any[]): Stat[] {
-  return apiStats.map(statInfo => ({
-    name: statInfo.stat.name,
-    value: statInfo.base_stat
-  }));
+  return apiStats?.map(statInfo => ({
+    name: statInfo?.stat?.name || 'unknown',
+    value: statInfo?.base_stat || 0
+  })) || [];
 }
 
 // Helper function to map API types to a consistent format
 export function mapPokemonTypes(apiTypes: any[]): string[] {
-  return apiTypes.map(typeInfo => typeInfo.type.name);
+  return apiTypes?.map(typeInfo => typeInfo?.type?.name || 'normal') || [];
 }
 
 // Helper function to map API moves to a consistent format
 export function mapPokemonMoves(apiMoves: any[]): Move[] {
   // Note: This is a simplified mapping. In a real game, you'd fetch detailed move data.
-  return apiMoves.map(moveInfo => ({
-    name: moveInfo.move.name,
-    power: moveInfo.move.power || null, // Power might be null for status moves
-    type: moveInfo.move.type.name,
-    category: moveInfo.move.damage_class.name,
-    accuracy: moveInfo.move.accuracy || null, // Accuracy might be null
-  }));
+  return (apiMoves?.map(moveInfo => {
+    if (!moveInfo?.move) return null;
+    return {
+      name: moveInfo.move.name || 'unknown',
+      power: moveInfo.move.power || null, // Power might be null for status moves
+      type: moveInfo.move.type?.name || 'normal',
+      category: moveInfo.move.damage_class?.name || 'physical',
+      accuracy: moveInfo.move.accuracy || null, // Accuracy might be null
+    };
+  }).filter(Boolean) as Move[]) || [];
 }

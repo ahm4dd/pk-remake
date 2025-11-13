@@ -1,6 +1,58 @@
 import ReadLine from "node:readline";
 import process from "node:process";
+import chalk from "chalk";
 import { type State, type CLICommand, Command, type CommandRegistry } from "./state.js";
+
+// Helper functions for displaying help
+function displayCommandHelp(command: CLICommand) {
+  console.log(chalk.bold.blue(`\nCommand: ${command.name}`));
+  console.log(chalk.yellow(`Usage: ${command.usage}`));
+  console.log(chalk.white(command.description));
+  if (command.arguments.length > 0) {
+    console.log(chalk.green("Arguments:"));
+    command.arguments.forEach(arg => {
+      console.log(`  - ${chalk.cyan(arg.name)}: ${arg.description} ${arg.required ? chalk.red('(required)') : chalk.gray('(optional)')}`);
+    });
+  }
+  if (command.options.length > 0) {
+    console.log(chalk.green("Options:"));
+    command.options.forEach(option => {
+      console.log(`  - ${chalk.cyan(option.name)}: ${option.description}`);
+    });
+  }
+  console.log(chalk.green("Examples:"));
+  command.examples.forEach(example => {
+    console.log(`  - ${chalk.magenta(example)}`);
+  });
+  console.log();
+}
+
+function displayGeneralHelp(commands: CommandRegistry) {
+  console.log(chalk.bold.blue("\nAvailable commands:"));
+
+  const categories: Record<string, { emoji: string; cmds: CLICommand[] }> = {
+    "System": { emoji: "⚙️", cmds: [] },
+    "Exploration": { emoji: "🗺️", cmds: [] },
+    "Pokemon Management": { emoji: "🐾", cmds: [] },
+  };
+
+  for (const cmdName in commands) {
+    const cmd = commands[cmdName as Command];
+    categories[cmd.category].cmds.push(cmd);
+  }
+
+  for (const [category, { emoji, cmds }] of Object.entries(categories)) {
+    if (cmds.length > 0) {
+      console.log(chalk.yellow(`\n${emoji} ${category}:`));
+      cmds.forEach(cmd => {
+        console.log(`  ${chalk.cyan(cmd.name)}: ${cmd.description}`);
+      });
+    }
+  }
+
+  console.log(chalk.gray("\nType 'help <command>' for more information on a specific command."));
+  console.log(chalk.gray("Type 'exit' to quit the application.\n"));
+}
 
 export function cleanInput(input: string): string[] {
   return input
@@ -78,37 +130,52 @@ export function parseInput(input: string, commandRegistry: CommandRegistry): { c
   return { command, parsedArgs, parsedOptions };
 }
 
+export async function executeCommand(state: State, input: string) {
+  const { command, parsedArgs, parsedOptions, error } = parseInput(input, state.commands);
+
+  if (error) {
+    console.log(`Error: ${error}`);
+    return;
+  }
+
+  if (!command) {
+    if (parsedArgs.length > 0) {
+      console.log(chalk.red(`Unknown command: ${parsedArgs[0]}`));
+    } else if (input.trim().length > 0) {
+      console.log(chalk.red(`Invalid input: ${input}`));
+    }
+    return;
+  }
+
+  if (command) {
+    // Check for --help option
+    if (parsedOptions.help || (command.name === 'help' && parsedArgs.length > 0)) {
+      const helpCommandName = parsedArgs[0] || '';
+      const helpCommand = state.commands[helpCommandName as Command] || undefined;
+      if (helpCommand) {
+        displayCommandHelp(helpCommand);
+      } else {
+        displayGeneralHelp(state.commands);
+      }
+    } else {
+      state.input.command = command.name as Command;
+      state.input.args = parsedArgs;
+      state.input.options = parsedOptions;
+      await command.callback(state);
+    }
+  } else if (input.trim().length > 0) {
+    // If no command was found but there was input, display general help
+    displayGeneralHelp(state.commands);
+  }
+}
+
 export async function startREPL(state: State) {
   let rl = state.rl;
-  let commands = state.commands;
+  rl.setPrompt(chalk.bold.green("Pokedex > "));
   rl.prompt();
 
   rl.on("line", async (input) => {
-    const { command, parsedArgs, parsedOptions, error } = parseInput(input, commands);
-
-    if (error) {
-      console.log(`Error: ${error}`);
-    } else if (command) {
-      // Check for --help option
-      if (parsedOptions.help || (command.name === 'help' && parsedArgs.length > 0)) {
-        const helpCommandName = parsedArgs[0] || '';
-        const helpCommand = commands[helpCommandName as Command] || undefined;
-        if (helpCommand) {
-          displayCommandHelp(helpCommand);
-        } else {
-          displayGeneralHelp(commands);
-        }
-      } else {
-        state.input.command = command.name;
-        state.input.args = parsedArgs;
-        state.input.options = parsedOptions;
-        await command.callback(state);
-      }
-    } else if (input.trim().length > 0) {
-      // If no command was found but there was input, display general help
-      displayGeneralHelp(commands);
-    }
-
+    await executeCommand(state, input);
     rl.prompt();
   });
 }

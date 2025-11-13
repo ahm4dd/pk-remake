@@ -10,27 +10,30 @@ import { commandPokedex } from "./commands/command_pokedex.js";
 import { commandRelease } from "./commands/command_release.js";
 import { commandBattle } from "./commands/command_battle.js";
 import { commandEvolve } from "./commands/command_evolve.js";
+import { commandLearn } from "./commands/command_learn.js";
 import { Pokemon } from "./pokemon.js";
 
 export type CLICommand = {
   name: string;
   description: string;
   usage: string;
+  category: string;
   arguments: { name: string; description: string; required: boolean; variadic?: boolean }[];
   options: { name: string; description: string; alias?: string; type: 'boolean' | 'string' | 'number'; defaultValue?: any; }[];
   examples: string[];
-  callback: CommandHandler;
+  callback: (state: State) => void | Promise<void>;
 };
 
 export type CommandRegistry = Record<Command, CLICommand>;
-export type CommandHandler = (state: State, parsedArgs: string[], parsedOptions: Record<string, any>) => void;
-export type Command = "exit" | "help" | "map" | "mapb" | "explore" | "catch" | "pokedex" | "release" | "battle" | "evolve";
+export type CommandHandler = (state: State) => void | Promise<void>;
+export type Command = "exit" | "help" | "map" | "mapb" | "explore" | "catch" | "pokedex" | "release" | "battle" | "evolve" | "learn";
 
 const commands: CommandRegistry = {
   exit: {
     name: "exit",
     description: "Exits the Pokedex",
     usage: "exit",
+    category: "System",
     arguments: [],
     options: [],
     examples: ["exit"],
@@ -40,6 +43,7 @@ const commands: CommandRegistry = {
     name: "help",
     description: "Displays a help message for all commands or a specific command.",
     usage: "help [command_name]",
+    category: "System",
     arguments: [
       { name: "command_name", description: "The name of the command to get help for.", required: false },
     ],
@@ -51,6 +55,7 @@ const commands: CommandRegistry = {
     name: "map",
     description: "Show the next 20 locations in the Pokemon world.",
     usage: "map",
+    category: "Exploration",
     arguments: [],
     options: [],
     examples: ["map"],
@@ -60,6 +65,7 @@ const commands: CommandRegistry = {
     name: "mapb",
     description: "Show the previous 20 locations in the Pokemon world.",
     usage: "mapb",
+    category: "Exploration",
     arguments: [],
     options: [],
     examples: ["mapb"],
@@ -69,6 +75,7 @@ const commands: CommandRegistry = {
     name: "explore",
     description: "Explore a location-area and display all encountered Pokemons.",
     usage: "explore <location_name>",
+    category: "Exploration",
     arguments: [
       { name: "location_name", description: "The name of the location area to explore.", required: true },
     ],
@@ -80,20 +87,21 @@ const commands: CommandRegistry = {
     name: "catch",
     description: "Tries to catch a Pokemon depending on a ball thrown.",
     usage: "catch <pokemon_name> [--ball <ball_type>]",
+    category: "Pokemon Management",
     arguments: [
       { name: "pokemon_name", description: "The name of the Pokemon to catch.", required: true },
     ],
     options: [
-      { name: "ball", description: "The type of ball to throw.", alias: "b", type: "string", defaultValue: "pokeball" },
-      { name: "balls", description: "Display available ball types.", type: "boolean", alias: "B" },
+      { name: "ball", description: "The type of ball to use (pokeball, greatball, ultraball).", alias: "b", type: "string", defaultValue: "pokeball" },
     ],
-    examples: ["catch pikachu", "catch charmander --ball greatball", "catch --balls"],
+    examples: ["catch pikachu", "catch charmander --ball greatball"],
     callback: commandCatch,
   },
   pokedex: {
     name: "pokedex",
     description: "Displays your caught Pokemon.",
     usage: "pokedex",
+    category: "Pokemon Management",
     arguments: [],
     options: [],
     examples: ["pokedex"],
@@ -103,6 +111,7 @@ const commands: CommandRegistry = {
     name: "release",
     description: "Releases a Pokemon from your party.",
     usage: "release <pokemon_name_or_index>",
+    category: "Pokemon Management",
     arguments: [
       { name: "pokemon_name_or_index", description: "The name or index of the Pokemon to release.", required: true },
     ],
@@ -114,6 +123,7 @@ const commands: CommandRegistry = {
     name: "battle",
     description: "Initiates a battle with a wild Pokemon.",
     usage: "battle <pokemon_name>",
+    category: "Pokemon Management",
     arguments: [
       { name: "pokemon_name", description: "The name of the wild Pokemon to battle.", required: true },
     ],
@@ -125,12 +135,26 @@ const commands: CommandRegistry = {
     name: "evolve",
     description: "Evolves a Pokemon if it meets the criteria.",
     usage: "evolve <pokemon_name_or_index>",
+    category: "Pokemon Management",
     arguments: [
       { name: "pokemon_name_or_index", description: "The name or index of the Pokemon to evolve.", required: true },
     ],
     options: [],
     examples: ["evolve pikachu", "evolve 1"],
     callback: commandEvolve,
+  },
+  learn: {
+    name: "learn",
+    description: "Teaches a move to a Pokemon.",
+    usage: "learn <pokemon_name_or_index> <move_name>",
+    category: "Pokemon Management",
+    arguments: [
+      { name: "pokemon_name_or_index", description: "The name or index of the Pokemon.", required: true },
+      { name: "move_name", description: "The name of the move to learn.", required: true },
+    ],
+    options: [],
+    examples: ["learn pikachu thunderbolt"],
+    callback: commandLearn,
   },
 } as const;
 
@@ -171,6 +195,7 @@ export function initState(): State {
     input: {
       command: "help",
       args: [],
+      options: {},
     },
   };
 }
