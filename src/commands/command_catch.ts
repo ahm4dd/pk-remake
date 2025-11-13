@@ -3,6 +3,7 @@ import chalk from "chalk";
 import ora from "ora";
 import { getPokemonAscii } from "./../ascii.js";
 import { db } from "./../database.js";
+import { GamificationManager } from "./../gamify.js";
 import { type Pokemon, type Pokeball, POKEBALLS, getPokemonCatchProbability, StatusCondition, mapPokemonStats, mapPokemonTypes, mapPokemonMoves } from "./../pokemon.js";
 import { PokeAPI } from "./../pokeapi.js";
 
@@ -106,6 +107,7 @@ export async function commandCatch(state: State) {
           types: JSON.stringify(pokemon.types),
           moves: JSON.stringify(pokemon.moves),
         });
+        GamificationManager.onCatch(state.currentUser.id, pokemon.name);
         console.log(chalk.gray("💡 Pokemon saved to your collection!"));
       } else {
         state.player.pokemon.push(pokemon);

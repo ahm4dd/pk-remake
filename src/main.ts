@@ -175,11 +175,11 @@ async function main() {
         const pokemonCount = db.getUserPokemon(user.id).length;
         const achievements = db.getUserAchievements(user.id);
         console.log(chalk.bold.blue(`Profile: ${user.username}`));
-        console.log(`Level: ${user.level}`);
-        console.log(`XP: ${user.xp}`);
+        console.log(`Level: ${user.level} (${user.xp} XP)`);
         console.log(`Pokemon Caught: ${pokemonCount}`);
-        console.log(`Achievements: ${achievements.length}`);
+        console.log(`Achievements Unlocked: ${achievements.length}`);
         console.log(`Member Since: ${new Date(user.created_at).toLocaleDateString()}`);
+        console.log(`Next Level: ${((user.level) * 100) - user.xp} XP needed`);
       } else {
         console.log(chalk.yellow('Please log in to view your profile.'));
       }
@@ -232,6 +232,24 @@ async function main() {
       db.updateInventory(state.currentUser.id, 'ball', item, currentQty + quantity);
 
       console.log(chalk.green(`Bought ${quantity} ${item}(s) for ${totalCost} XP!`));
+    });
+
+  commander.command('achievements', 'View your unlocked achievements.', 'System')
+    .setAction(() => {
+      if (!state.currentUser) {
+        console.log(chalk.red('Please log in to view achievements.'));
+        return;
+      }
+
+      const achievements = db.getUserAchievements(state.currentUser.id);
+      if (achievements.length === 0) {
+        console.log(chalk.yellow('No achievements unlocked yet. Keep playing!'));
+      } else {
+        console.log(chalk.bold.blue('🏆 Your Achievements:'));
+        achievements.forEach(ach => {
+          console.log(`- ${ach.achievement_name}`);
+        });
+      }
     });
 
   const args = process.argv.slice(2);
