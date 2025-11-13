@@ -310,46 +310,78 @@ async function startREPL(commander: Commander, state: any) {
     return;
   }
 
-  // Interactive mode using readline.question for simplicity
+  // Interactive mode: Simple loop with echo control
+  const prompt = chalk.bold.green("Pokedex > ");
+  let isEchoDisabled = false;
+
+  // Try to disable terminal echo
+  try {
+    execSync('stty -echo', { stdio: 'inherit' });
+    isEchoDisabled = true;
+  } catch (error) {
+    console.warn(chalk.yellow('Warning: Terminal echo could not be disabled. Input may appear doubled.'));
+    isEchoDisabled = false;
+  }
+
+  const cleanup = () => {
+    if (isEchoDisabled) {
+      try {
+        execSync('stty echo', { stdio: 'inherit' });
+      } catch {}
+    }
+  };
+
+  process.on('exit', cleanup);
+  process.on('SIGINT', () => {
+    cleanup();
+    process.exit(0);
+  });
+
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
 
-  const prompt = chalk.bold.green("Pokedex > ");
-
-  const askCommand = () => {
-    rl.question(prompt, async (input) => {
-      const trimmed = input.trim();
-      if (trimmed === 'exit') {
-        console.log(chalk.blue("Goodbye!"));
-        rl.close();
-        return;
-      }
-
-      if (trimmed) {
-        const args = trimmed.split(/\s+/);
-        const { command, args: parsedArgs, options, help } = commander.parse(args);
-
-        try {
-          if (help && command) {
-            console.log(command.help());
-          } else if (command) {
-            await command.action(parsedArgs, options);
-          } else {
-            console.log(chalk.red(`Unknown command: ${args[0]}`));
-            commander.showHelp();
-          }
-        } catch (error) {
-          console.error(chalk.red(`Command error: ${(error as Error).message}`));
+  const runCommand = async () => {
+    try {
+      rl.question(prompt, async (input) => {
+        const trimmed = input.trim();
+        if (trimmed === 'exit') {
+          console.log(chalk.blue("Goodbye!"));
+          rl.close();
+          cleanup();
+          return;
         }
-      }
 
-      askCommand(); // Recurse for next command
-    });
+        if (trimmed) {
+          const args = trimmed.split(/\s+/);
+          const { command, args: parsedArgs, options, help } = commander.parse(args);
+
+          try {
+            if (help && command) {
+              console.log(command.help());
+            } else if (command) {
+              await command.action(parsedArgs, options);
+            } else {
+              console.log(chalk.red(`Unknown command: ${args[0]}`));
+              commander.showHelp();
+            }
+          } catch (error) {
+            console.error(chalk.red(`Command error: ${(error as Error).message}`));
+          }
+        }
+
+        // Recurse for next command
+        runCommand();
+      });
+    } catch (error) {
+      console.error(chalk.red(`REPL error: ${(error as Error).message}`));
+      cleanup();
+      process.exit(1);
+    }
   };
 
-  askCommand();
+  runCommand();
 }
 
 main();
