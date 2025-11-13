@@ -18,7 +18,7 @@ function findEvolution(
 } | null {
   for (const evolution of evolutions) {
     if (
-      evolution.from === currentPokemonName &&
+      evolution.from.toLowerCase() === currentPokemonName.toLowerCase() &&
       evolution.trigger === "level-up" && // Only consider level-up evolutions for now
       evolution.minLevel !== null &&
       currentLevel >= evolution.minLevel

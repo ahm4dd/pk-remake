@@ -21,7 +21,7 @@ describe('Learn Command Tests', () => {
 
     // Mocking readline for input prompts
     rlQuestionSpy = vi.fn().mockImplementation((query, callback) => {
-      if (query.includes('Choose a move to forget')) {
+      if (query.includes('Enter the number of the move to forget')) {
         callback('1'); // Default to forgetting the first move
       }
     });
@@ -46,13 +46,13 @@ describe('Learn Command Tests', () => {
   it('should prompt for Pokemon and move if not provided', async () => {
     mockState.input.args = [];
     await commandLearn(mockState);
-    expect(consoleSpy).toHaveBeenCalledWith('Please specify a Pokemon and a move to learn (e.g., 'learn pikachu thunderbolt').');
+    expect(consoleSpy).toHaveBeenCalledWith('Please specify a Pokemon and a move to learn (e.g., \'learn pikachu thunderbolt\').');
   });
 
   it('should handle Pokemon not found in party', async () => {
     mockState.input.args = ['nonexistentmon', 'tackle'];
     await commandLearn(mockState);
-    expect(consoleSpy).toHaveBeenCalledWith('Pokemon 'nonexistentmon' not found in your party.');
+    expect(consoleSpy).toHaveBeenCalledWith('Pokemon \'nonexistentmon\' not found in your party.');
   });
 
   it('should handle move data not found', async () => {
@@ -76,8 +76,9 @@ describe('Learn Command Tests', () => {
     pokeAPIMock.getMoveData = vi.fn().mockResolvedValue({ name: 'flamethrower', power: 90, type: { name: 'fire' }, damage_class: { name: 'special' }, accuracy: 100 });
     await commandLearn(mockState);
     expect(consoleSpy).toHaveBeenCalledWith('Charmander already knows 4 moves. Which move would you like to forget?');
+    expect(consoleSpy).toHaveBeenCalledWith('Charmander forgot Scratch and learned flamethrower!');
     expect(mockState.player.pokemon[1].moves.length).toBe(4);
-    expect(mockState.player.pokemon[1].moves[0].name).toBe('Scratch'); // Should still have Scratch if default forget is 1st move
+    expect(mockState.player.pokemon[1].moves[0].name).toBe('flamethrower');
   });
 
   it('should replace a forgotten move with a new move', async () => {
@@ -85,7 +86,7 @@ describe('Learn Command Tests', () => {
     pokeAPIMock.getMoveData = vi.fn().mockResolvedValue({ name: 'flamethrower', power: 90, type: { name: 'fire' }, damage_class: { name: 'special' }, accuracy: 100 });
     // Mocking the user input to choose to forget the first move (Scratch)
     rlQuestionSpy.mockImplementation((query, callback) => {
-      if (query.includes('Choose a move to forget')) {
+      if (query.includes('Enter the number of the move to forget')) {
         callback('1'); // Forgetting Scratch
       }
     });
@@ -100,7 +101,7 @@ describe('Learn Command Tests', () => {
     pokeAPIMock.getMoveData = vi.fn().mockResolvedValue({ name: 'flamethrower', power: 90, type: { name: 'fire' }, damage_class: { name: 'special' }, accuracy: 100 });
     // Mocking the user input to cancel forgetting
     rlQuestionSpy.mockImplementation((query, callback) => {
-      if (query.includes('Choose a move to forget')) {
+      if (query.includes('Enter the number of the move to forget')) {
         callback('0'); // Cancel forgetting
       }
     });

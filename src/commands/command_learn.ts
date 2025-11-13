@@ -1,5 +1,5 @@
 import { type State } from "./../state.js";
-import { Pokemon, mapPokemonStats, mapPokemonTypes, mapPokemonMoves, Move } from "./../pokemon.js";
+import { Pokemon, mapPokemonStats, mapPokemonTypes, mapPokemonMoves, Move, Stat } from "./../pokemon.js";
 import { PokeAPI } from "./../pokeapi.js";
 import ReadLine from "node:readline";
 
@@ -33,7 +33,7 @@ export async function commandLearn(state: State) {
     );
   }
 
-  if (pokemonIndexToEvolve === -1) {
+  if (pokemonIndexToLearn === -1) {
     console.log(`Pokemon '${pokemonIdentifier}' not found in your party.`);
     return;
   }

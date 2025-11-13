@@ -1,5 +1,5 @@
 import { test, expect } from "vitest";
-import { Cache } from "./../pokecache.js";
+import { Cache } from "../src/pokecache";
 
 test.concurrent.each([
   {
