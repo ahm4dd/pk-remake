@@ -1,6 +1,5 @@
 import chalk from "chalk";
-import * as readline from "readline";
-import { execSync } from "child_process";
+import inquirer from 'inquirer';
 import figlet from "figlet";
 import { Commander } from "./commander.js";
 import { initState } from "./state.js";
@@ -23,23 +22,16 @@ import { commandLearn } from "./commands/command_learn.js";
 // Global error handlers for REPL stability
 process.on('uncaughtException', (err) => {
   console.error(chalk.red('Uncaught error:'), err.message);
-  resetTerminal();
-  console.log(chalk.blue("REPL restarted due to error."));
-  // Restart REPL if possible, but for now, exit
+  console.log(chalk.blue("Exiting due to error."));
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error(chalk.red('Unhandled rejection at:'), promise, 'reason:', reason);
-  resetTerminal();
   process.exit(1);
 });
 
-function resetTerminal() {
-  try {
-    execSync('stty sane', { stdio: 'inherit' });
-  } catch {}
-}
+// Removed resetTerminal as Inquirer handles terminal state
 
 async function main() {
   console.log(chalk.bold.blue(figlet.textSync("Pokemon CLI", { horizontalLayout: 'full' })));
@@ -285,7 +277,7 @@ async function main() {
 
 async function startREPL(commander: Commander, state: any) {
   if (!process.stdin.isTTY) {
-    // Piped input
+    // Piped input (fallback for non-interactive)
     process.stdin.on('data', async (chunk) => {
       const input = chunk.toString().trim();
       if (input) {
@@ -310,83 +302,43 @@ async function startREPL(commander: Commander, state: any) {
     return;
   }
 
-  // Interactive mode: Simple loop with echo control
-  const prompt = chalk.bold.green("Pokedex > ");
-  let isEchoDisabled = false;
+  // Interactive mode with Inquirer
+  console.log(chalk.bold.green("🐾 Welcome to Pokemon CLI! Type 'exit' to quit."));
 
-  // Try to disable terminal echo (optional, with fallback)
-  try {
-    execSync('stty -echo', { stdio: 'inherit' });
-    isEchoDisabled = true;
-  } catch (error) {
-    // Silent failure - echo will remain enabled
-    isEchoDisabled = false;
-  }
-
-  // If echo couldn't be disabled, warn once
-  if (!isEchoDisabled) {
-    console.warn(chalk.yellow('Warning: Terminal echo is enabled. Input may appear doubled visually (this is cosmetic).'));
-  }
-
-  const cleanup = () => {
-    if (isEchoDisabled) {
-      try {
-        execSync('stty echo', { stdio: 'inherit' });
-      } catch {}
-    }
-  };
-
-  process.on('exit', cleanup);
-  process.on('SIGINT', () => {
-    cleanup();
-    process.exit(0);
-  });
-
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  const runCommand = async () => {
+  while (true) {
     try {
-      rl.question(prompt, async (input) => {
-        const trimmed = input.trim();
-        if (trimmed === 'exit') {
-          console.log(chalk.blue("Goodbye!"));
-          rl.close();
-          cleanup();
-          return;
-        }
+      const { input } = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'input',
+          message: chalk.bold.green('Pokedex >'),
+          validate: (input: string) => input.trim() !== '' || 'Please enter a command.',
+        },
+      ]);
 
-        if (trimmed) {
-          const args = trimmed.split(/\s+/);
-          const { command, args: parsedArgs, options, help } = commander.parse(args);
+      const trimmed = input.trim();
+      if (trimmed === 'exit') {
+        console.log(chalk.blue("Goodbye!"));
+        break;
+      }
 
-          try {
-            if (help && command) {
-              console.log(command.help());
-            } else if (command) {
-              await command.action(parsedArgs, options);
-            } else {
-              console.log(chalk.red(`Unknown command: ${args[0]}`));
-              commander.showHelp();
-            }
-          } catch (error) {
-            console.error(chalk.red(`Command error: ${(error as Error).message}`));
-          }
-        }
+      const args = trimmed.split(/\s+/);
+      const { command, args: parsedArgs, options, help } = commander.parse(args);
 
-        // Add a small delay to prevent rapid-fire issues
-        setTimeout(() => runCommand(), 10);
-      });
+      if (help && command) {
+        console.log(command.help());
+      } else if (command) {
+        await command.action(parsedArgs, options);
+      } else {
+        console.log(chalk.red(`Unknown command: ${args[0]}`));
+        commander.showHelp();
+      }
     } catch (error) {
-      console.error(chalk.red(`REPL error: ${(error as Error).message}`));
-      cleanup();
-      process.exit(1);
+      console.error(chalk.red(`Error: ${(error as Error).message}`));
     }
-  };
+  }
 
-  runCommand();
+  process.exit(0);
 }
 
 main();
