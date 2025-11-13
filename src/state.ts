@@ -79,16 +79,16 @@ const commands: CommandRegistry = {
     examples: ["mapb"],
     callback: commandMapb,
   },
-  explore: {
+   explore: {
     name: "explore",
     description: "Explore a location-area and display all encountered Pokemons.",
-    usage: "explore <location_name>",
+    usage: "explore <location_area_name>",
     category: "Exploration",
     arguments: [
-      { name: "location_name", description: "The name of the location area to explore.", required: true },
+      { name: "location_area_name", description: "The name of the location area to explore (e.g., pallet-town-area).", required: true },
     ],
     options: [],
-    examples: ["explore kanto"],
+    examples: ["explore pallet-town-area"],
     callback: commandExplore,
   },
   catch: {
