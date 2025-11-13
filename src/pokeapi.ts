@@ -171,8 +171,8 @@ export class PokeAPI {
     }
   }
   async fetchLocation(locationName: string): Promise<Location> {
+    // First, try as location-area
     let fullURL = PokeAPI.baseUrl + `/location-area/${locationName}`;
-
     let cacheData = this.cache.get(fullURL);
     if (cacheData) {
       return cacheData as Location;
@@ -187,13 +187,49 @@ export class PokeAPI {
         },
       });
 
-      let parsedData = locationAreaSchema.parse(await data.json());
+      if (data.ok) {
+        let parsedData = locationAreaSchema.parse(await data.json());
+        this.cache.add(fullURL, parsedData);
+        return parsedData;
+      }
+    } catch (err) {
+      // Ignore and try as location
+    }
 
-      this.cache.add(fullURL, parsedData);
+    // If not found, try as location and get first area
+    fullURL = PokeAPI.baseUrl + `/location/${locationName}`;
+    cacheData = this.cache.get(fullURL);
+    if (cacheData) {
+      const locationData = cacheData as z.infer<typeof fullLocationSchema>;
+      if (locationData.areas && locationData.areas.length > 0) {
+        const areaName = locationData.areas[0].name;
+        return this.fetchLocation(areaName);
+      }
+    }
 
-      return parsedData;
+    try {
+      let data = await fetch(fullURL, {
+        method: "GET",
+        mode: "cors",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (data.ok) {
+        let locationData = fullLocationSchema.parse(await data.json());
+        this.cache.add(fullURL, locationData);
+        if (locationData.areas && locationData.areas.length > 0) {
+          const areaName = locationData.areas[0].name;
+          return this.fetchLocation(areaName);
+        } else {
+          throw new Error("No areas found for this location.");
+        }
+      } else {
+        throw new Error("Location not found.");
+      }
     } catch (err: unknown) {
-      throw new Error("The data received was in an incorrect format.");
+      throw new Error("Failed to fetch location or area data.");
     }
   }
 }
@@ -289,4 +325,13 @@ export const locationAreaSchema = z.object({
   name: z.string(),
   names: z.array(nameSchema),
   pokemon_encounters: pokemonEncounterArraySchema,
+});
+
+export const fullLocationSchema = z.object({
+  areas: z.array(z.object({ name: z.string(), url: z.string() })),
+  game_indices: z.array(z.any()),
+  id: z.number(),
+  name: z.string(),
+  names: z.array(nameSchema),
+  region: z.object({ name: z.string(), url: z.string() }),
 });

@@ -310,93 +310,46 @@ async function startREPL(commander: Commander, state: any) {
     return;
   }
 
-  // Interactive mode with full control
-  let currentLine = '';
-  const prompt = chalk.bold.green("Pokedex > ");
-  let isEchoDisabled = false;
-
-  // Try to disable terminal echo
-  try {
-    execSync('stty -echo', { stdio: 'inherit' });
-    isEchoDisabled = true;
-  } catch (error) {
-    console.warn(chalk.yellow('Warning: Terminal echo could not be disabled. Input may appear doubled. Try using a different terminal or run `stty -echo` manually.'));
-    isEchoDisabled = false;
-  }
-
-  const redraw = () => {
-    process.stdout.write('\r\x1b[K' + prompt + currentLine);
-  };
-
-  process.stdout.write(prompt);
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-  process.stdin.setEncoding('utf8');
-
-  const cleanup = () => {
-    if (isEchoDisabled) {
-      try {
-        execSync('stty echo', { stdio: 'inherit' });
-      } catch {}
-    }
-  };
-
-  process.on('exit', cleanup);
-  process.on('SIGINT', () => {
-    cleanup();
-    process.exit(0);
+  // Interactive mode using readline.question for simplicity
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
   });
 
-  process.stdin.on('data', async (chunk) => {
-    try {
-      const char = chunk.toString();
+  const prompt = chalk.bold.green("Pokedex > ");
 
-      if (char === '\r' || char === '\n') {
-        process.stdout.write('\n');
-        const input = currentLine.trim();
-        currentLine = '';
+  const askCommand = () => {
+    rl.question(prompt, async (input) => {
+      const trimmed = input.trim();
+      if (trimmed === 'exit') {
+        console.log(chalk.blue("Goodbye!"));
+        rl.close();
+        return;
+      }
 
-        if (input) {
-          const args = input.split(/\s+/);
-          const { command, args: parsedArgs, options, help } = commander.parse(args);
+      if (trimmed) {
+        const args = trimmed.split(/\s+/);
+        const { command, args: parsedArgs, options, help } = commander.parse(args);
 
-          try {
-            if (help && command) {
-              console.log(command.help());
-            } else if (command) {
-              await command.action(parsedArgs, options);
-            } else {
-              console.log(chalk.red(`Unknown command: ${args[0]}`));
-              commander.showHelp();
-            }
-          } catch (error) {
-            console.error(chalk.red(`Command error: ${(error as Error).message}`));
+        try {
+          if (help && command) {
+            console.log(command.help());
+          } else if (command) {
+            await command.action(parsedArgs, options);
+          } else {
+            console.log(chalk.red(`Unknown command: ${args[0]}`));
+            commander.showHelp();
           }
-        }
-
-        process.stdout.write(prompt);
-      } else if (char === '\u0003') { // Ctrl+C
-        process.stdout.write('\n' + chalk.blue("Goodbye!") + '\n');
-        cleanup();
-        process.exit(0);
-      } else if (char === '\u007f') { // Backspace
-        if (currentLine.length > 0) {
-          currentLine = currentLine.slice(0, -1);
-          redraw();
-        }
-      } else if (char >= ' ' && char <= '~') { // Printable characters
-        if (currentLine.length < 500) { // Prevent overflow
-          currentLine += char;
-          redraw();
+        } catch (error) {
+          console.error(chalk.red(`Command error: ${(error as Error).message}`));
         }
       }
-    } catch (error) {
-      console.error(chalk.red(`REPL error: ${(error as Error).message}`));
-      resetTerminal();
-      process.stdout.write(prompt);
-      currentLine = '';
-    }
-  });
+
+      askCommand(); // Recurse for next command
+    });
+  };
+
+  askCommand();
 }
 
 main();
