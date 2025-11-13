@@ -1,11 +1,123 @@
 import { z } from "zod";
 import { Cache } from "./pokecache.js";
+
+// Define schemas for Pokemon species, data, stats, moves, and evolution chains
+const pokemonSpeciesSchema = z.object({
+  name: z.string(),
+  capture_rate: z.number(),
+  base_happiness: z.number(),
+  evolution_chain: z.object({
+    url: z.string()
+  }).nullable()
+});
+
+const pokemonDataBaseSchema = z.object({
+  name: z.string(),
+  stats: z.array(z.object({
+    base_stat: z.number(),
+    stat: z.object({ name: z.string() }),
+  })),
+  types: z.array(z.object({
+    type: z.object({ name: z.string() }),
+  })),
+});
+
+const moveSchema = z.object({
+  name: z.string(),
+  power: z.number().nullable(),
+  type: z.object({ name: z.string() }),
+  damage_class: z.object({ name: z.string() }), // 'physical', 'special', 'status'
+  accuracy: z.number().nullable(),
+});
+
+// Schema for a single evolution link in the chain
+const evolutionLinkSchema = z.object({
+  is_baby: z.boolean(),
+  species: z.object({ name: z.string() }),
+  evolution_details: z.array(z.object({
+    min_level: z.number().nullable(),
+    trigger: z.object({ name: z.string() }),
+    // Add other evolution triggers if needed (e.g., item, trade, time of day)
+  }))
+});
+
+// Schema for the evolution chain structure
+const evolutionChainSchema = z.object({
+  chain: evolutionLinkSchema.transform(chain => {
+    // Flatten the chain into a more usable structure
+    const evolutions: { from: string; to: string; minLevel: number | null; trigger: string }[] = [];
+    function traverse(link: z.infer<typeof evolutionLinkSchema>) {
+      for (const evolvesTo of link.evolves_to) {
+        const evolutionDetail = evolvesTo.evolution_details[0]; // Assuming one primary evolution detail
+        evolutions.push({
+          from: link.species.name,
+          to: evolvesTo.species.name,
+          minLevel: evolutionDetail?.min_level ?? null,
+          trigger: evolutionDetail?.trigger.name ?? 'level-up',
+        });
+        traverse(evolvesTo);
+      }
+    }
+    traverse(chain);
+    return evolutions;
+  })
+});
+
 export class PokeAPI {
   private static readonly baseUrl: string = "https://pokeapi.co/api/v2";
   private cache: Cache;
 
   constructor(cacheInterval: number = 360000) {
     this.cache = new Cache(cacheInterval);
+  }
+
+  private async fetch<T>(url: string, schema: z.ZodSchema<T>): Promise<T> {
+    let cacheData = this.cache.get(url);
+    if (cacheData) {
+      return cacheData as T;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        mode: "cors",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const parsedData = schema.parse(data);
+
+      this.cache.add(url, parsedData);
+      return parsedData;
+    } catch (err: unknown) {
+      console.error(`Error fetching or parsing data from ${url}:`, err);
+      throw new Error("Failed to fetch or parse data from PokeAPI.");
+    }
+  }
+
+  async getPokemonSpecies(name: string): Promise<z.infer<typeof pokemonSpeciesSchema>> {
+    const url = `${PokeAPI.baseUrl}/pokemon-species/${name}`;
+    return this.fetch(url, pokemonSpeciesSchema);
+  }
+
+  async getPokemonData(name: string): Promise<z.infer<typeof pokemonDataBaseSchema>> {
+    const url = `${PokeAPI.baseUrl}/pokemon/${name}`;
+    return this.fetch(url, pokemonDataBaseSchema);
+  }
+
+  async getMoveData(name: string): Promise<z.infer<typeof moveSchema>> {
+    const url = `${PokeAPI.baseUrl}/move/${name}`;
+    return this.fetch(url, moveSchema);
+  }
+
+  async getEvolutionChain(url: string): Promise<z.infer<typeof evolutionChainSchema>> {
+    return this.fetch(url, evolutionChainSchema);
   }
 
   async fetchLocations(pageURL?: string): Promise<ShallowLocations> {
@@ -120,11 +232,6 @@ export const version2Schema = z.object({
 export const versionDetailSchema = z.object({
   rate: z.number(),
   version: versionSchema,
-});
-
-export const nameSchema = z.object({
-  language: languageSchema,
-  name: z.string(),
 });
 
 export const encounterDetailSchema = z.object({
