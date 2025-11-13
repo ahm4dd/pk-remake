@@ -37,6 +37,15 @@ export const POKEBALLS: Record<string, Pokeball> = {
   pokeball: { name: "pokeball", catchRateModifier: 1, description: "Standard effectiveness" },
   greatball: { name: "greatball", catchRateModifier: 1.5, description: "Better than standard" },
   ultraball: { name: "ultraball", catchRateModifier: 2, description: "Highest effectiveness" },
+  masterball: { name: "masterball", catchRateModifier: 255, description: "Guaranteed catch" },
+  safariball: { name: "safariball", catchRateModifier: 0.5, description: "For Safari Zone only" },
+  netball: { name: "netball", catchRateModifier: 2, description: "2x vs Water/Bug types" },
+  diveball: { name: "diveball", catchRateModifier: 2, description: "2x when underwater" },
+  nestball: { name: "nestball", catchRateModifier: 2, description: "Better for low-level Pokemon" },
+  repeatball: { name: "repeatball", catchRateModifier: 2, description: "Better for caught Pokemon" },
+  timerball: { name: "timerball", catchRateModifier: 1, description: "Gets better with time" },
+  luxuryball: { name: "luxuryball", catchRateModifier: 1, description: "Increases friendship faster" },
+  premierball: { name: "premierball", catchRateModifier: 1, description: "Rare commemorative ball" },
 };
 
 export function getPokemonCatchProbability(pokemon: Pokemon, ball: Pokeball): number {

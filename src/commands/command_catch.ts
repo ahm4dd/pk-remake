@@ -21,6 +21,18 @@ export async function commandCatch(state: State) {
   const pokemonName = parsedArgs[0];
   const ballType = parsedArgs[1] || options.ball || "pokeball";
 
+  // Check inventory if logged in
+  if (state.currentUser) {
+    const inventory = db.getInventory(state.currentUser.id);
+    const ballItem = inventory.find(item => item.item_type === 'ball' && item.item_name === ballType);
+    if (!ballItem || ballItem.quantity <= 0) {
+      console.log(chalk.red(`You don't have any ${ballType}s!`));
+      return;
+    }
+    // Consume ball
+    db.updateInventory(state.currentUser.id, 'ball', ballType, ballItem.quantity - 1);
+  }
+
   if (options.balls) {
     console.log(chalk.bold.blue("Available Pokeballs:"));
     console.log(chalk.gray("-------------------------"));

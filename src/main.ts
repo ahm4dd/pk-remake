@@ -6,6 +6,7 @@ import { Commander } from "./commander.js";
 import { initState } from "./state.js";
 import { setTheme, getThemeColor, themes, currentTheme } from "./theme.js";
 import { UserManager } from "./user.js";
+import { db } from "./database.js";
 // Import command functions
 import { commandExit } from "./commands/command_exit.js";
 import { commandHelp } from "./commands/command_help.js";
@@ -80,7 +81,7 @@ async function main() {
       await commandExplore(state);
     });
 
-  commander.command('catch', 'Tries to catch a Pokemon depending on a ball thrown. Available balls: pokeball (1x), greatball (1.5x), ultraball (2x).', 'Pokemon Management')
+  commander.command('catch', 'Tries to catch a Pokemon depending on a ball thrown. Use --balls to see all available balls.', 'Pokemon Management')
     .argument('pokemon_name', 'The name of the Pokemon to catch.', true)
     .argument('ball', 'The type of ball to use (pokeball, greatball, ultraball). Defaults to pokeball.', false)
     .option('balls', 'List all available ball types.', 'boolean')
@@ -167,6 +168,23 @@ async function main() {
       }
     });
 
+  commander.command('profile', 'View your profile and stats.', 'System')
+    .setAction(() => {
+      if (state.currentUser) {
+        const user = state.currentUser;
+        const pokemonCount = db.getUserPokemon(user.id).length;
+        const achievements = db.getUserAchievements(user.id);
+        console.log(chalk.bold.blue(`Profile: ${user.username}`));
+        console.log(`Level: ${user.level}`);
+        console.log(`XP: ${user.xp}`);
+        console.log(`Pokemon Caught: ${pokemonCount}`);
+        console.log(`Achievements: ${achievements.length}`);
+        console.log(`Member Since: ${new Date(user.created_at).toLocaleDateString()}`);
+      } else {
+        console.log(chalk.yellow('Please log in to view your profile.'));
+      }
+    });
+
   commander.command('theme', 'Changes the CLI theme.', 'System')
     .argument('theme_name', 'The theme to apply (default, pokemon, dark).', false)
     .setAction((args) => {
@@ -185,6 +203,35 @@ async function main() {
         console.log(infoColor(`Current theme: ${currentName}`));
         console.log(infoColor(`Available themes: ${Object.keys(themes).join(', ')}`));
       }
+    });
+
+  commander.command('shop', 'Buy items with XP.', 'System')
+    .argument('item', 'Item to buy (ball types).', true)
+    .argument('quantity', 'Quantity to buy.', false)
+    .setAction((args) => {
+      if (!state.currentUser) {
+        console.log(chalk.red('Please log in to access the shop.'));
+        return;
+      }
+
+      const item = args[0];
+      const quantity = parseInt(args[1] || '1');
+      const costPerItem = 100; // XP cost
+      const totalCost = costPerItem * quantity;
+
+      if (state.currentUser.xp < totalCost) {
+        console.log(chalk.red(`Not enough XP! Need ${totalCost}, have ${state.currentUser.xp}.`));
+        return;
+      }
+
+      // Deduct XP
+      UserManager.updateXP(state.currentUser.id, -totalCost);
+
+      // Add to inventory
+      const currentQty = db.getInventory(state.currentUser.id).find(i => i.item_type === 'ball' && i.item_name === item)?.quantity || 0;
+      db.updateInventory(state.currentUser.id, 'ball', item, currentQty + quantity);
+
+      console.log(chalk.green(`Bought ${quantity} ${item}(s) for ${totalCost} XP!`));
     });
 
   const args = process.argv.slice(2);
