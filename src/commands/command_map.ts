@@ -8,13 +8,23 @@ export async function commandMap(state: State) {
     const spinner = ora(chalk.blue("Fetching locations...")).start();
 
     let locations = await state.pokeapi.fetchLocations(
-      state.nextLocationsUrl !== "" || state.nextLocationsUrl !== undefined
+      state.nextLocationsUrl !== "" && state.nextLocationsUrl !== undefined
         ? state.nextLocationsUrl
         : undefined
     );
 
     spinner.succeed(chalk.green("Locations loaded!"));
-    printLocations(locations);
+
+    // Paginate: Show only first 20 to prevent overload
+    const pageSize = 20;
+    const results = locations.results.slice(0, pageSize);
+    const paginatedLocations = { ...locations, results };
+
+    printLocations(paginatedLocations);
+
+    if (locations.results.length > pageSize) {
+      console.log(chalk.gray(`Showing first ${pageSize} locations. Use 'map' again for next page.`));
+    }
 
     state.nextLocationsUrl = locations.next ?? null;
     state.prevLocationsUrl = locations.previous ?? null;

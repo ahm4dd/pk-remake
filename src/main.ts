@@ -314,13 +314,18 @@ async function startREPL(commander: Commander, state: any) {
   const prompt = chalk.bold.green("Pokedex > ");
   let isEchoDisabled = false;
 
-  // Try to disable terminal echo
+  // Try to disable terminal echo (optional, with fallback)
   try {
     execSync('stty -echo', { stdio: 'inherit' });
     isEchoDisabled = true;
   } catch (error) {
-    console.warn(chalk.yellow('Warning: Terminal echo could not be disabled. Input may appear doubled.'));
+    // Silent failure - echo will remain enabled
     isEchoDisabled = false;
+  }
+
+  // If echo couldn't be disabled, warn once
+  if (!isEchoDisabled) {
+    console.warn(chalk.yellow('Warning: Terminal echo is enabled. Input may appear doubled visually (this is cosmetic).'));
   }
 
   const cleanup = () => {
@@ -371,8 +376,8 @@ async function startREPL(commander: Commander, state: any) {
           }
         }
 
-        // Recurse for next command
-        runCommand();
+        // Add a small delay to prevent rapid-fire issues
+        setTimeout(() => runCommand(), 10);
       });
     } catch (error) {
       console.error(chalk.red(`REPL error: ${(error as Error).message}`));
