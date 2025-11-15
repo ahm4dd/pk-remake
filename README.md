@@ -2,6 +2,8 @@
 
 A terminal-based Pokemon adventure! Catch, battle, and trade Pokemon with a fully interactive CLI. Built for fans of retro gaming and command-line setup, endless fun.
 
+> Special thanks to Opencode for contributing lol
+
 <img width="773" height="397" alt="image" src="https://github.com/user-attachments/assets/ab95eb62-8c7a-4026-a739-ab6e14955f3f" />
 
 
