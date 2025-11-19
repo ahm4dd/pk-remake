@@ -21,6 +21,7 @@ export interface Pokemon {
   stats: string; // JSON
   types: string; // JSON
   moves: string; // JSON
+  current_hp: number;
   caught_at: string;
 }
 
@@ -75,7 +76,7 @@ class DatabaseManager {
   private initSchema() {
     // Users table
     this.db.exec(`
-      CREATE TABLE users (
+      CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
@@ -87,7 +88,7 @@ class DatabaseManager {
 
     // Pokemon table
     this.db.exec(`
-      CREATE TABLE pokemon (
+      CREATE TABLE IF NOT EXISTS pokemon (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         name TEXT NOT NULL,
@@ -96,14 +97,24 @@ class DatabaseManager {
         stats TEXT NOT NULL,
         types TEXT NOT NULL,
         moves TEXT NOT NULL,
+        current_hp INTEGER,
         caught_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users (id)
       )
     `);
+    
+    // Migration: Add current_hp if it doesn't exist
+    try {
+      this.db.prepare('SELECT current_hp FROM pokemon LIMIT 1').get();
+    } catch (err) {
+      console.log('Migrating database: Adding current_hp to pokemon table...');
+      this.db.exec('ALTER TABLE pokemon ADD COLUMN current_hp INTEGER');
+      this.db.exec('UPDATE pokemon SET current_hp = 100 WHERE current_hp IS NULL');
+    }
 
     // Inventory table
     this.db.exec(`
-      CREATE TABLE inventory (
+      CREATE TABLE IF NOT EXISTS inventory (
         user_id INTEGER NOT NULL,
         item_type TEXT NOT NULL,
         item_name TEXT NOT NULL,
@@ -115,7 +126,7 @@ class DatabaseManager {
 
     // Achievements table
     this.db.exec(`
-      CREATE TABLE achievements (
+      CREATE TABLE IF NOT EXISTS achievements (
         user_id INTEGER NOT NULL,
         achievement_name TEXT NOT NULL,
         unlocked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -126,7 +137,7 @@ class DatabaseManager {
 
     // Trades table
     this.db.exec(`
-      CREATE TABLE trades (
+      CREATE TABLE IF NOT EXISTS trades (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         from_user_id INTEGER NOT NULL,
         to_user_id INTEGER NOT NULL,
@@ -143,7 +154,7 @@ class DatabaseManager {
 
     // Daily challenges table
     this.db.exec(`
-      CREATE TABLE daily_challenges (
+      CREATE TABLE IF NOT EXISTS daily_challenges (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         challenge_type TEXT NOT NULL,
@@ -155,6 +166,45 @@ class DatabaseManager {
         FOREIGN KEY (user_id) REFERENCES users (id)
       )
     `);
+
+    // Quests table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS quests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        type TEXT NOT NULL,
+        target_count INTEGER NOT NULL,
+        reward_xp INTEGER NOT NULL,
+        reward_item TEXT
+      )
+    `);
+
+    // User Quests table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS user_quests (
+        user_id INTEGER NOT NULL,
+        quest_id INTEGER NOT NULL,
+        current_count INTEGER DEFAULT 0,
+        completed BOOLEAN DEFAULT FALSE,
+        completed_at DATETIME,
+        PRIMARY KEY (user_id, quest_id),
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (quest_id) REFERENCES quests (id)
+      )
+    `);
+
+    // Seed initial quests
+    const questsCount = this.db.prepare('SELECT COUNT(*) as count FROM quests').get() as { count: number };
+    if (questsCount.count === 0) {
+      const insertQuest = this.db.prepare(`
+        INSERT INTO quests (title, description, type, target_count, reward_xp, reward_item)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      insertQuest.run('Beginner Catcher', 'Catch 5 Pokemon', 'catch', 5, 100, 'pokeball');
+      insertQuest.run('Battle Rookie', 'Win 3 Battles', 'battle', 3, 150, 'potion');
+      insertQuest.run('Explorer', 'Explore 10 locations', 'explore', 10, 200, 'greatball');
+    }
 
     // Default inventory will be added on user creation
   }
@@ -200,6 +250,13 @@ class DatabaseManager {
     return row ? row.username : null;
   }
 
+  getUserById(userId: number): User | null {
+    const stmt = this.db.prepare(`
+      SELECT * FROM users WHERE id = ?
+    `);
+    return stmt.get(userId) as User | null;
+  }
+
   updateUserXP(userId: number, xp: number, level: number) {
     const stmt = this.db.prepare(`
       UPDATE users SET xp = ?, level = ? WHERE id = ?
@@ -210,8 +267,8 @@ class DatabaseManager {
   // Pokemon methods
   savePokemon(userId: number, pokemon: Omit<Pokemon, 'id' | 'user_id' | 'caught_at'>) {
     const stmt = this.db.prepare(`
-      INSERT INTO pokemon (user_id, name, level, experience, stats, types, moves)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO pokemon (user_id, name, level, experience, stats, types, moves, current_hp)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
       userId,
@@ -220,7 +277,8 @@ class DatabaseManager {
       pokemon.experience,
       pokemon.stats,
       pokemon.types,
-      pokemon.moves
+      pokemon.moves,
+      pokemon.current_hp || 100 // Default to 100 if not provided
     );
   }
 
@@ -229,6 +287,13 @@ class DatabaseManager {
       SELECT * FROM pokemon WHERE user_id = ? ORDER BY caught_at DESC
     `);
     return stmt.all(userId) as Pokemon[];
+  }
+  
+  updatePokemonHP(pokemonId: number, currentHp: number) {
+    const stmt = this.db.prepare(`
+      UPDATE pokemon SET current_hp = ? WHERE id = ?
+    `);
+    stmt.run(currentHp, pokemonId);
   }
 
   getPokemonIdByUserAndName(userId: number, name: string): number | null {
@@ -400,6 +465,63 @@ class DatabaseManager {
     return stmt.all(limit) as { username: string; level: number; xp: number }[];
   }
 
+  // Quest methods
+  getAvailableQuests(): Quest[] {
+    return this.db.prepare('SELECT * FROM quests').all() as Quest[];
+  }
+
+  getUserQuestProgress(userId: number): UserQuest[] {
+    const rows = this.db.prepare('SELECT * FROM user_quests WHERE user_id = ?').all(userId) as any[];
+    return rows.map(row => ({
+      ...row,
+      completed: Boolean(row.completed)
+    })) as UserQuest[];
+  }
+
+  assignQuest(userId: number, questId: number) {
+    this.db.prepare(`
+      INSERT OR IGNORE INTO user_quests (user_id, quest_id) VALUES (?, ?)
+    `).run(userId, questId);
+  }
+
+  updateQuestProgress(userId: number, type: string, increment: number = 1) {
+    // Find active quests of this type for the user
+    const quests = this.db.prepare(`
+      SELECT uq.*, q.target_count 
+      FROM user_quests uq
+      JOIN quests q ON uq.quest_id = q.id
+      WHERE uq.user_id = ? AND q.type = ? AND uq.completed = FALSE
+    `).all(userId, type) as (UserQuest & { target_count: number })[];
+
+    const updateStmt = this.db.prepare(`
+      UPDATE user_quests SET current_count = ? WHERE user_id = ? AND quest_id = ?
+    `);
+
+    for (const quest of quests) {
+      const newCount = quest.current_count + increment;
+      if (newCount <= quest.target_count) {
+        updateStmt.run(newCount, userId, quest.quest_id);
+      }
+    }
+  }
+
+  completeQuest(userId: number, questId: number): { xp: number; item?: string } | null {
+    const quest = this.db.prepare('SELECT * FROM quests WHERE id = ?').get(questId) as Quest;
+    const userQuest = this.db.prepare('SELECT * FROM user_quests WHERE user_id = ? AND quest_id = ?').get(userId, questId) as UserQuest;
+
+    if (!quest || !userQuest || userQuest.completed || userQuest.current_count < quest.target_count) {
+      return null;
+    }
+
+    this.db.prepare(`
+      UPDATE user_quests 
+      SET completed = TRUE, completed_at = CURRENT_TIMESTAMP 
+      WHERE user_id = ? AND quest_id = ?
+    `).run(userId, questId);
+
+    return { xp: quest.reward_xp, item: quest.reward_item };
+  }
+
   close() {
     this.db.close();
   }
@@ -409,3 +531,21 @@ export const db = new DatabaseManager();
 
 // For tests
 export const createTestDB = () => new DatabaseManager(':memory:');
+
+export interface Quest {
+  id: number;
+  title: string;
+  description: string;
+  type: string; // 'catch', 'battle', 'explore'
+  target_count: number;
+  reward_xp: number;
+  reward_item?: string;
+}
+
+export interface UserQuest {
+  user_id: number;
+  quest_id: number;
+  current_count: number;
+  completed: boolean;
+  completed_at?: string;
+}

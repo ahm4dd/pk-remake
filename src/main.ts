@@ -18,6 +18,7 @@ import { commandRelease } from "./commands/command_release.js";
 import { commandBattle } from "./commands/command_battle.js";
 import { commandEvolve } from "./commands/command_evolve.js";
 import { commandLearn } from "./commands/command_learn.js";
+import { commandQuests } from "./commands/command_quests.js";
 
 // Global error handlers for REPL stability
 process.on('uncaughtException', (err) => {
@@ -242,6 +243,13 @@ async function main() {
           console.log(`- ${ach.achievement_name}`);
         });
       }
+    });
+
+  commander.command('quests', 'View and manage your quests.', 'Gamification')
+    .argument('subcommand', 'claim', false)
+    .setAction(async (args) => {
+      state.input.args = args;
+      await commandQuests(state);
     });
 
   const args = process.argv.slice(2);

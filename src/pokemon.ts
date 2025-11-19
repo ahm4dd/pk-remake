@@ -12,6 +12,7 @@ export type Pokemon = {
   stats: Stat[];
   types: string[];
   moves: Move[];
+  currentHp?: number;
 };
 
 export type Stat = {

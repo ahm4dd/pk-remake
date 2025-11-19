@@ -96,9 +96,15 @@ Show the previous 20 locations.
 - **Notes**: Navigate back through locations.
 
 ### `explore <location_name>`
-Explore an area and see wild Pokemon.
-- **Example**: `explore pallet-town`
-- **Notes**: Lists encounterable Pokemon. Use names for catching/battling.
+Explore an area and discover wild Pokemon, rare encounters, and items.
+- **Example**: `explore pallet-town-area`
+- **Features**:
+  - **Normal Encounters**: Lists common Pokemon in the area
+  - **Rare Encounters** (5% chance): Rare Pokemon like Dratini, Eevee, Lapras
+  - **Legendary Encounters** (1% chance): Ultra-rare legendary Pokemon (very difficult to catch!)
+  - **Item Finds** (10% chance): Find Pokeballs, Potions, and other useful items
+  - **Location Types**: Get hints about which Pokemon types are common in the area
+- **Notes**: Rare finds and items are only available for logged-in users. Keep exploring to complete quests and find treasures!
 
 ## Gamification
 Track progress and earn rewards.
@@ -123,8 +129,12 @@ View shop items or buy one.
 
 ### `use <item_name> <pokemon_index>`
 Use an item on a Pokemon.
-- **Example**: `use potion 1`
-- **Notes**: E.g., potions heal HP. Consumes the item.
+- **Example**: `use potion 1` or `use super-potion 3`
+- **Potion Types**:
+  - `potion`: Restores 20 HP
+  - `super-potion`: Restores 50 HP
+  - `hyper-potion`: Restores 200 HP
+- **Notes**: Heals Pokemon's HP based on item type. Won't overheal past max HP. Displays before/after HP values. Consumes the item from inventory. Login required for inventory tracking.
 
 ## Social
 Interact with other users.

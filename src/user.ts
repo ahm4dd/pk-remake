@@ -50,7 +50,7 @@ export class UserManager {
   }
 
   static updateXP(userId: number, xpGained: number) {
-    const user = db.getUserByUsername(''); // Placeholder, need to track current user
+    const user = db.getUserById(userId);
     if (user) {
       const newXP = user.xp + xpGained;
       const newLevel = Math.floor(newXP / 100) + 1;

@@ -19,6 +19,8 @@ import { commandUse } from "./commands/command_use.js";
 import { commandSave, commandLoad } from "./commands/command_save.js";
 import { commandLanguage } from "./commands/command_language.js";
 import { commandTheme } from "./commands/command_theme.js";
+import { commandGym } from "./commands/command_gym.js";
+import { commandQuests } from "./commands/command_quests.js";
 import { Pokemon } from "./pokemon.js";
 
 export type CLICommand = {
@@ -34,7 +36,7 @@ export type CLICommand = {
 
 export type CommandRegistry = Record<Command, CLICommand>;
 export type CommandHandler = (state: State) => void | Promise<void>;
-export type Command = "exit" | "help" | "map" | "mapb" | "explore" | "catch" | "pokedex" | "release" | "battle" | "evolve" | "learn" | "trade" | "daily" | "leaderboard" | "shop" | "use" | "save" | "load" | "language" | "theme";
+export type Command = "exit" | "help" | "map" | "mapb" | "explore" | "catch" | "pokedex" | "release" | "battle" | "evolve" | "learn" | "trade" | "daily" | "leaderboard" | "shop" | "use" | "save" | "load" | "language" | "theme" | "gym" | "quests";
 
 const commands: CommandRegistry = {
   exit: {
@@ -267,6 +269,28 @@ const commands: CommandRegistry = {
     options: [],
     examples: ["theme no-color"],
     callback: commandTheme,
+  },
+  gym: {
+    name: "gym",
+    description: "Challenge gym leaders for badges and XP.",
+    usage: "gym",
+    category: "Battle",
+    arguments: [],
+    options: [],
+    examples: ["gym"],
+    callback: commandGym,
+  },
+  quests: {
+    name: "quests",
+    description: "View and manage your quests.",
+    usage: "quests [claim]",
+    category: "Gamification",
+    arguments: [
+      { name: "subcommand", description: "claim", required: false },
+    ],
+    options: [],
+    examples: ["quests", "quests claim"],
+    callback: commandQuests,
   },
 } as const;
 

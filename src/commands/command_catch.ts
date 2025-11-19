@@ -4,6 +4,7 @@ import ora from "ora";
 import { getPokemonAscii } from "./../ascii.js";
 import { db } from "./../database.js";
 import { GamificationManager } from "./../gamify.js";
+import { QuestManager } from "./../quests.js";
 import { type Pokemon, type Pokeball, POKEBALLS, getPokemonCatchProbability, StatusCondition, mapPokemonStats, mapPokemonTypes, mapPokemonMoves } from "./../pokemon.js";
 import { PokeAPI } from "./../pokeapi.js";
 
@@ -79,15 +80,20 @@ export async function commandCatch(state: State) {
     const mockStatus: StatusCondition = Math.random() < 0.2 ? "paralyzed" : null;
 
     // Extract relevant data for catch calculation
+    const stats = mapPokemonStats(pokemonData.stats);
+    const hpStat = stats.find(s => s.name === 'hp');
+    const maxHp = hpStat ? hpStat.value : 100;
+
     const pokemon: Pokemon = {
       name: pokemonName,
       experience: pokemonSpecies.base_happiness * 10, // Using base_happiness as a proxy for experience, scaled up
       baseCatchRate: pokemonSpecies.capture_rate,
       level: Math.floor(Math.random() * 10) + 1, // Mock level between 1 and 10
       status: mockStatus,
-      stats: mapPokemonStats(pokemonData.stats),
+      stats: stats,
       types: mapPokemonTypes(pokemonData.types),
       moves: mapPokemonMoves(pokemonData.moves?.slice(0, 4) || []), // First 4 moves
+      currentHp: maxHp,
     };
 
     const catchProbability = getPokemonCatchProbability(pokemon, selectedBall);
@@ -106,9 +112,11 @@ export async function commandCatch(state: State) {
           stats: JSON.stringify(pokemon.stats),
           types: JSON.stringify(pokemon.types),
           moves: JSON.stringify(pokemon.moves),
+          current_hp: pokemon.currentHp || 100,
         });
         GamificationManager.onCatch(state.currentUser.id, pokemon.name);
         db.updateChallengeProgress(state.currentUser.id, 'catch');
+        QuestManager.checkProgress(state.currentUser.id, 'catch');
         console.log(chalk.gray("💡 Pokemon saved to your collection!"));
       } else {
         state.player.pokemon.push(pokemon);
