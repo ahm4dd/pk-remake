@@ -49,12 +49,12 @@ export class UserManager {
     return db.getUserByUsername('')?.id === userId ? db.getUserByUsername('') : null;
   }
 
-  static updateXP(userId: number, xpGained: number) {
-    const user = db.getUserById(userId);
+  static updateXP(userId: number, xpGained: number, database: any = db) {
+    const user = database.getUserById(userId);
     if (user) {
       const newXP = user.xp + xpGained;
       const newLevel = Math.floor(newXP / 100) + 1;
-      db.updateUserXP(userId, newXP, newLevel);
+      database.updateUserXP(userId, newXP, newLevel);
     }
   }
 }

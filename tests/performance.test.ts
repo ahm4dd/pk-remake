@@ -17,7 +17,8 @@ describe('Performance Tuning', () => {
 
   it('should handle database queries efficiently', async () => {
     // Test that getUserPokemon is fast
-    const { db } = await import('../src/database.js');
+    const { createTestDB } = await import('../src/database.js');
+    const db = createTestDB();
     const user = db.createUser('perfuser', 'hash');
     const start = Date.now();
     db.getUserPokemon(user.id);

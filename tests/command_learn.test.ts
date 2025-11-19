@@ -12,6 +12,23 @@ describe('Learn Command Tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock chalk to return the string as is
+    vi.mock('chalk', () => {
+      return {
+        default: {
+          red: (str: string) => str,
+          green: (str: string) => str,
+          yellow: (str: string) => str,
+          cyan: (str: string) => str,
+          blue: (str: string) => str,
+          magenta: (str: string) => str,
+          white: (str: string) => str,
+          gray: (str: string) => str,
+          bold: (str: string) => str,
+        }
+      };
+    });
+    
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     // Mocking PokeAPI methods
@@ -40,6 +57,7 @@ describe('Learn Command Tests', () => {
         ],
       },
       input: { command: 'learn', args: [], options: {} },
+      currentUser: null,
     };
   });
 

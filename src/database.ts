@@ -59,7 +59,7 @@ export interface DailyChallenge {
   completed: boolean;
 }
 
-class DatabaseManager {
+export class DatabaseManager {
   private db: Database.Database;
 
   constructor(dbPath?: string) {
