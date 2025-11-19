@@ -19,6 +19,7 @@ import { commandBattle } from "./commands/command_battle.js";
 import { commandEvolve } from "./commands/command_evolve.js";
 import { commandLearn } from "./commands/command_learn.js";
 import { commandQuests } from "./commands/command_quests.js";
+import { commandUse } from "./commands/command_use.js";
 
 // Global error handlers for REPL stability
 process.on('uncaughtException', (err) => {
@@ -250,6 +251,14 @@ async function main() {
     .setAction(async (args) => {
       state.input.args = args;
       await commandQuests(state);
+    });
+
+  commander.command('use', 'Use an item on a Pokemon.', 'Pokemon Management')
+    .argument('item_name', 'The name of the item to use (e.g., potion, super-potion).', true)
+    .argument('pokemon_index', 'The index of the Pokemon to use the item on (1-based).', true)
+    .setAction(async (args) => {
+      state.input.args = args;
+      await commandUse(state);
     });
 
   const args = process.argv.slice(2);
